@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>生徒データベース検索くん v1.1.4</title>
+  <title>生徒データベース検索くん v1.2.0</title>
   <style>
     body { font-family: sans-serif; margin: 8px; background: #1b2e23; color: #e2e8f0; max-width: 650px; margin: 0 auto; padding: 12px; box-sizing: border-box; }
     * { box-sizing: border-box; }
@@ -11,8 +11,12 @@
     .header-box { text-align: center; margin-bottom: 12px; }
     h2 { font-size: 1.2rem; margin: 0; display: inline-flex; align-items: center; gap: 8px; color: #f8fafc; }
     .version-tag { font-size: 0.7rem; background: #d97706; color: #fff; padding: 2px 8px; border-radius: 10px; font-weight: normal; }
-    .sub-desc { text-align: center; font-size: 0.75rem; color: #94a3b8; margin-top: 4px; margin-bottom: 16px; }
+    .sub-desc { text-align: center; font-size: 0.75rem; color: #94a3b8; margin-top: 4px; margin-bottom: 12px; }
     
+    .status-container { display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 0.75rem; color: #94a3b8; }
+    .refresh-btn { background: #334e3f; color: #5eead4; border: 1px solid #475569; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; }
+    .refresh-btn:hover { background: #3d5e4b; }
+
     .card { background: #23382c; padding: 12px; border-radius: 8px; border: 1px solid #334e3f; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); width: 100%; overflow: hidden; }
     .card-title { font-weight: bold; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 8px; border-bottom: 2px solid #0d9488; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
     .card-title a { color: #5eead4; text-decoration: none; }
@@ -61,17 +65,20 @@
     table.class-table th, table.class-table td { border: 1px solid #334e3f; padding: 6px 8px; text-align: left; white-space: nowrap; }
     table.class-table th { background: #1f3529; font-weight: bold; color: #5eead4; }
     
-    .status-bar { text-align: center; font-size: 0.75rem; color: #94a3b8; margin-bottom: 12px; }
     .result-header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0d9488; padding-bottom: 4px; margin-bottom: 8px; flex-wrap: wrap; gap: 6px; }
   </style>
 </head>
 <body>
 
   <div class="header-box">
-    <h2>🎓 生徒データベース検索くん <span class="version-tag">v1.1.4</span></h2>
+    <h2>🎓 生徒データベース検索くん <span class="version-tag">v1.2.0</span></h2>
   </div>
   <div class="sub-desc">個別検索（st番号 / クラス＋番号） ＆ クラス別一括CSVダウンロード</div>
-  <div class="status-bar" id="statusBar">🔄 データベース接続中...</div>
+  
+  <div class="status-container">
+    <span id="statusBar">🔄 データベース準備中...</span>
+    <button class="refresh-btn" onclick="fetchLatestData(true)" title="最新データを強制再取得">🔄 更新</button>
+  </div>
 
   <!-- 1. 出力項目選択 -->
   <div class="card">
@@ -130,9 +137,9 @@
   </div>
 
   <script>
-    // ★ ご指定いただいた新しい正確なGAS URLを設定しています
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxC0cWc03U1aQjFbzDy-4IbneYu8ahOuSKctHFjfhvoIRB8vT1Z_LJoaLayqCy1SUpH/exec";
-    const STORAGE_KEY_FIELDS = 'student_db_selected_fields_v8';
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxHomdM1FR3isGhGXs51NQQcUtNFTe4JfeRNX7SfM7Y_-gVTuS7hWdv5mqpjZDTTvFDGA/exec";
+    const STORAGE_KEY_FIELDS = 'student_db_selected_fields_v9';
+    const CACHE_KEY_DATA = 'student_db_cached_data_v1';
     
     let allHeaders = [];
     let allRows = [];
@@ -156,12 +163,42 @@
       return String(val);
     }
 
-    // JSONP方式でデータを安全に取得
+    // --- 高速起動ロジック（ブラウザキャッシュ優先読み込み） ---
     function initDB() {
+      // 1. まずローカル保存されているデータを即座に展開（0秒起動）
+      const localData = localStorage.getItem(CACHE_KEY_DATA);
+      if (localData) {
+        try {
+          const parsed = JSON.parse(localData);
+          if (parsed && parsed.headers && parsed.rows) {
+            allHeaders = parsed.headers;
+            allRows = parsed.rows;
+            buildFieldCheckboxes();
+            buildClassFieldSelects();
+            setStatus(`⚡ キャッシュから即時読込（全 ${allRows.length} 件）`);
+          }
+        } catch (e) {
+          // パース失敗時は無視して通信へ
+        }
+      }
+
+      // 2. バックグラウンドでGASから最新データを取得
+      fetchLatestData(false);
+    }
+
+    function fetchLatestData(isManual) {
+      if (isManual) {
+        setStatus("🔄 最新データを取得中...");
+      }
+      
       const script = document.createElement('script');
       script.src = `${GAS_API_URL}?callback=handleData&t=${Date.now()}`;
       script.onerror = function() {
-        setStatus("⚠️ データの取得に失敗しました");
+        if (allRows.length === 0) {
+          setStatus("⚠️ データの取得に失敗しました");
+        } else {
+          setStatus(`⚠️ 最新取得失敗（手元のデータ: 全 ${allRows.length} 件）`);
+        }
       };
       document.body.appendChild(script);
     }
@@ -170,11 +207,21 @@
       if (res && res.headers && res.rows) {
         allHeaders = res.headers;
         allRows = res.rows;
-        setStatus(`✅ 接続完了（全 ${allRows.length} 件のデータ）`);
+
+        // ブラウザに保存して次回以降の起動を爆速にする
+        try {
+          localStorage.setItem(CACHE_KEY_DATA, JSON.stringify(res));
+        } catch (e) {
+          // ストレージ容量超えの場合は保存スキップ
+        }
+
         buildFieldCheckboxes();
         buildClassFieldSelects();
+        setStatus(`✅ 最新データ同期完了（全 ${allRows.length} 件）`);
       } else {
-        setStatus("⚠️ データ構造が不正です");
+        if (allRows.length === 0) {
+          setStatus("⚠️ データ構造が不正です");
+        }
       }
     };
 
@@ -217,12 +264,13 @@
       const currentYearStr = new Date().getFullYear().toString();
 
       const select1 = document.getElementById('classFieldSelect');
+      const prevVal1 = select1.value;
       select1.innerHTML = '';
       classFields.forEach(field => {
         const opt = document.createElement('option');
         opt.value = field;
         opt.innerText = field;
-        if (field.includes(currentYearStr)) {
+        if (prevVal1 ? field === prevVal1 : field.includes(currentYearStr)) {
           opt.selected = true;
         }
         select1.appendChild(opt);
@@ -230,12 +278,13 @@
       if (!select1.value && select1.options.length > 0) select1.selectedIndex = 0;
 
       const select2 = document.getElementById('cardClassFieldSelect');
+      const prevVal2 = select2.value;
       select2.innerHTML = '';
       classFields.forEach(field => {
         const opt = document.createElement('option');
         opt.value = field;
         opt.innerText = field;
-        if (field.includes(currentYearStr)) {
+        if (prevVal2 ? field === prevVal2 : field.includes(currentYearStr)) {
           opt.selected = true;
         }
         select2.appendChild(opt);
