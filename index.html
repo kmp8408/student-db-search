@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>生徒データベース検索くん v1.1.2</title>
+  <title>生徒データベース検索くん v1.1.3</title>
   <style>
     body { font-family: sans-serif; margin: 8px; background: #1b2e23; color: #e2e8f0; max-width: 650px; margin: 0 auto; padding: 12px; box-sizing: border-box; }
     * { box-sizing: border-box; }
@@ -23,12 +23,12 @@
     .checkbox-label { font-size: 0.8rem; display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; color: #cbd5e1; }
     .checkbox-label input[type="checkbox"] { accent-color: #0d9488; }
 
-    /* スマホでもはみ出さない入力行レイアウト */
+    /* 入力行 */
     .search-row { display: flex; gap: 6px; margin-top: 8px; width: 100%; }
     input[type="text"], select { width: 100%; min-width: 0; padding: 8px; font-size: 0.9rem; border: 1px solid #475569; border-radius: 4px; background: #18281e; color: #f8fafc; }
     input[type="text"]::placeholder { color: #64748b; }
 
-    /* クラス・番号入力のレイアウト（スマホ対応：折り返し許可） */
+    /* クラス・番号入力のレイアウト */
     .class-num-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; width: 100%; }
     .class-num-row select { flex: 1 1 100px; min-width: 0; }
     .class-num-row input[type="text"] { flex: 1 1 90px; min-width: 0; }
@@ -68,7 +68,7 @@
 <body>
 
   <div class="header-box">
-    <h2>🎓 生徒データベース検索くん <span class="version-tag">v1.1.2</span></h2>
+    <h2>🎓 生徒データベース検索くん <span class="version-tag">v1.1.3</span></h2>
   </div>
   <div class="sub-desc">個別検索（st番号 / クラス＋番号） ＆ クラス別一括CSVダウンロード</div>
   <div class="status-bar" id="statusBar">🔄 データベース接続中...</div>
@@ -130,8 +130,8 @@
   </div>
 
   <script>
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxC0cWc03U1aQjFbzDy-4IbneYu8ahOuSKctHFjfhvoIRB8vT1Z_LJoaLayqCy1SUpH/exec";
-    const STORAGE_KEY_FIELDS = 'student_db_selected_fields_v6';
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz3OOah1oJL1rz1qnApPu349fApSmiDS0Q7XoEeu1hTKfOM08x17EAhZGP9y80h1u68lA/exec";
+    const STORAGE_KEY_FIELDS = 'student_db_selected_fields_v7';
     
     let allHeaders = [];
     let allRows = [];
@@ -155,24 +155,27 @@
       return String(val);
     }
 
-    async function initDB() {
-      try {
-        const response = await fetch(GAS_API_URL);
-        const res = await response.json();
-        
-        if (res && res.headers && res.rows) {
-          allHeaders = res.headers;
-          allRows = res.rows;
-          setStatus(`✅ 接続完了（全 ${allRows.length} 件のデータ）`);
-          buildFieldCheckboxes();
-          buildClassFieldSelects();
-        } else {
-          setStatus("⚠️ データ構造が不正です");
-        }
-      } catch (err) {
-        setStatus("⚠️ データの取得に失敗しました (" + err.message + ")");
-      }
+    // JSONP方式でデータを安全に取得
+    function initDB() {
+      const script = document.createElement('script');
+      script.src = `${GAS_API_URL}?callback=handleData&t=${Date.now()}`;
+      script.onerror = function() {
+        setStatus("⚠️ データの取得に失敗しました");
+      };
+      document.body.appendChild(script);
     }
+
+    window.handleData = function(res) {
+      if (res && res.headers && res.rows) {
+        allHeaders = res.headers;
+        allRows = res.rows;
+        setStatus(`✅ 接続完了（全 ${allRows.length} 件のデータ）`);
+        buildFieldCheckboxes();
+        buildClassFieldSelects();
+      } else {
+        setStatus("⚠️ データ構造が不正です");
+      }
+    };
 
     function buildFieldCheckboxes() {
       const container = document.getElementById('fieldCheckboxes');
@@ -452,43 +455,4 @@
           td.innerText = formatValue(f, row[f]);
           tr.appendChild(td);
         });
-        tbody.appendChild(tr);
-      });
-      table.appendChild(tbody);
-      tableContainer.appendChild(table);
-
-      resultContent.appendChild(tableContainer);
-    }
-
-    function downloadCSV(rows, fields, className) {
-      const csvRows = [];
-      csvRows.push(fields.map(f => `"${f.replace(/"/g, '""')}"`).join(','));
-
-      rows.forEach(row => {
-        const values = fields.map(f => {
-          const val = formatValue(f, row[f]);
-          return `"${val.replace(/"/g, '""')}"`;
-        });
-        csvRows.push(values.join(','));
-      });
-
-      const blob = new Blob(['\uFEFF' + csvRows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `student_list_${className}_${new Date().toISOString().slice(0,10)}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-
-    function escapeHtml(str) {
-      if (!str) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
+        tbody.appendChild(tr
