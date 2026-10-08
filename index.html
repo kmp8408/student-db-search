@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>生徒データベース検索くん v1.3.0</title>
+  <title>生徒データベース検索くん v1.3.1</title>
   <style>
     body { font-family: sans-serif; margin: 8px; background: #1b2e23; color: #e2e8f0; max-width: 650px; margin: 0 auto; padding: 12px; box-sizing: border-box; }
     * { box-sizing: border-box; }
@@ -25,7 +25,7 @@
     .login-field { margin-bottom: 12px; }
     .login-field label { display: block; font-size: 0.8rem; color: #cbd5e1; margin-bottom: 4px; }
     .login-field input { width: 100%; padding: 10px; font-size: 0.95rem; border: 1px solid #475569; border-radius: 4px; background: #18281e; color: #f8fafc; }
-    .login-error { color: #f87171; font-size: 0.8rem; margin-top: 8px; text-align: center; display: none; }
+    .login-error { color: #f87171; font-size: 0.85rem; margin-top: 10px; text-align: center; font-weight: bold; display: none; padding: 6px; background: rgba(239,68,68,0.1); border-radius: 4px; border: 1px solid #ef4444; }
     .btn-login-submit { width: 100%; background: #0d9488; color: #fff; border: none; padding: 12px; font-size: 1rem; font-weight: bold; border-radius: 4px; cursor: pointer; margin-top: 8px; }
     .btn-login-submit:hover { background: #0f766e; }
     .btn-login-submit:disabled { background: #475569; cursor: not-allowed; }
@@ -88,7 +88,7 @@
 <body>
 
   <div class="header-box">
-    <h2>🎓 生徒データベース検索くん <span class="version-tag">v1.3.0</span></h2>
+    <h2>🎓 生徒データベース検索くん <span class="version-tag">v1.3.1</span></h2>
   </div>
   <div class="sub-desc">教員専用認証システム ＆ 生徒情報データベース</div>
 
@@ -98,7 +98,7 @@
     <button class="logout-btn" onclick="logout()">ログアウト</button>
   </div>
 
-  <!-- ログイン入力フォーム（未認証時に表示） -->
+  <!-- ログイン入力フォーム -->
   <div class="login-container" id="loginContainer">
     <div class="login-title">🔒 教員認証</div>
     <div class="login-field">
@@ -113,7 +113,7 @@
     <div class="login-error" id="loginError"></div>
   </div>
 
-  <!-- メイン検索アプリ領域（ログイン成功後に展開） -->
+  <!-- メイン検索アプリ領域 -->
   <div id="mainAppArea">
     <div class="status-bar" id="statusBar">✅ 認証完了</div>
 
@@ -176,27 +176,26 @@
 
   <script>
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwzbUMOPgQaGan2cK_illXQ8XQZy3Xf4guG_k1O3F6mLCdNWPIDe9-_bvH4qApQ5JbcMA/exec";
-    const STORAGE_KEY_FIELDS = 'student_db_selected_fields_v10';
-    const SESSION_KEY_TEACHER = 'student_db_logged_teacher';
+    const STORAGE_KEY_FIELDS = 'student_db_selected_fields_v11';
+    const SESSION_KEY_TEACHER = 'student_db_logged_teacher_v11';
 
     let allHeaders = [];
     let allRows = [];
     let lastSearchResultText = "";
 
-    // ページ読み込み時にログイン状態を判定
     window.addEventListener('DOMContentLoaded', () => {
-      const savedTeacher = sessionStorage.getItem(SESSION_KEY_TEACHER);
-      if (savedTeacher) {
-        try {
+      try {
+        const savedTeacher = sessionStorage.getItem(SESSION_KEY_TEACHER);
+        if (savedTeacher) {
           const teacherObj = JSON.parse(savedTeacher);
           showApp(teacherObj);
-        } catch (e) {
-          sessionStorage.removeItem(SESSION_KEY_TEACHER);
         }
+      } catch (e) {
+        sessionStorage.removeItem(SESSION_KEY_TEACHER);
       }
     });
 
-    // ログイン実行処理
+    // ログイン処理（安全コールバック方式）
     function executeLogin() {
       const idVal = document.getElementById('loginId').value.trim();
       const passVal = document.getElementById('loginPass').value.trim();
@@ -205,7 +204,7 @@
 
       errBox.style.display = 'none';
       if (!idVal || !passVal) {
-        errBox.innerText = '教員IDとパスワードを入力してください。';
+        errBox.innerText = '⚠️ 教員IDとパスワードを入力してください。';
         errBox.style.display = 'block';
         return;
       }
@@ -213,31 +212,314 @@
       loginBtn.disabled = true;
       loginBtn.innerText = '🔄 認証中...';
 
-      // JSONPでログイン検証
-      const script = document.createElement('script');
-      const callbackName = 'loginCallback_' + Date.now();
-      
-      window[callbackName] = function(res) {
+      // グローバルな固定コールバック関数を利用
+      window.handleLoginResponse = function(res) {
         loginBtn.disabled = false;
         loginBtn.innerText = 'ログインして利用開始';
-        document.body.removeChild(script);
-        delete window[callbackName];
 
         if (res && res.success) {
-          // 生徒データと教員データを展開
-          allHeaders = res.headers || [];
-          allRows = res.rows || [];
-          
-          // セッションに教員情報を保存（ブラウザを閉じるまで有効）
-          sessionStorage.setItem(SESSION_KEY_TEACHER, JSON.stringify(res.teacher));
-          
-          showApp(res.teacher);
-          buildFieldCheckboxes();
-          buildClassFieldSelects();
+          try {
+            allHeaders = res.headers || [];
+            allRows = res.rows || [];
+            
+            sessionStorage.setItem(SESSION_KEY_TEACHER, JSON.stringify(res.teacher || { name: '教員' }));
+            
+            showApp(res.teacher || { name: '教員' });
+            buildFieldCheckboxes();
+            buildClassFieldSelects();
+          } catch (renderErr) {
+            alert('画面構築エラー: ' + renderErr.message);
+          }
         } else {
-          errBox.innerText = res && res.message ? res.message : '認証に失敗しました。';
+          errBox.innerText = res && res.message ? res.message : '⚠️ IDまたはパスワードが正しくありません。';
           errBox.style.display = 'block';
         }
       };
 
-      script.src = `${GAS_API_URL}?action=login&id=${encodeURIComponent(id
+      // タイムアウト監視（10秒応答がない場合の強制解除）
+      const timeoutId = setTimeout(() => {
+        if (loginBtn.disabled) {
+          loginBtn.disabled = false;
+          loginBtn.innerText = 'ログインして利用開始';
+          errBox.innerText = '⚠️ 通信がタイムアウトしました。もう一度お試しください。';
+          errBox.style.display = 'block';
+        }
+      }, 10000);
+
+      const script = document.createElement('script');
+      script.src = `${GAS_API_URL}?action=login&id=${encodeURIComponent(idVal)}&pass=${encodeURIComponent(passVal)}&callback=handleLoginResponse&t=${Date.now()}`;
+      script.onerror = function() {
+        clearTimeout(timeoutId);
+        loginBtn.disabled = false;
+        loginBtn.innerText = 'ログインして利用開始';
+        errBox.innerText = '⚠️ 通信エラーが発生しました。インターネット接続またはURLを確認してください。';
+        errBox.style.display = 'block';
+      };
+      script.onload = function() {
+        clearTimeout(timeoutId);
+      };
+      document.body.appendChild(script);
+    }
+
+    function showApp(teacher) {
+      document.getElementById('loginContainer').style.display = 'none';
+      document.getElementById('userBar').style.display = 'flex';
+      document.getElementById('userNameLabel').innerText = (teacher && teacher.name) ? teacher.name : '教員';
+      document.getElementById('mainAppArea').style.display = 'block';
+    }
+
+    function logout() {
+      sessionStorage.removeItem(SESSION_KEY_TEACHER);
+      allHeaders = [];
+      allRows = [];
+      document.getElementById('loginId').value = '';
+      document.getElementById('loginPass').value = '';
+      document.getElementById('mainAppArea').style.display = 'none';
+      document.getElementById('userBar').style.display = 'none';
+      document.getElementById('resultBox').style.display = 'none';
+      document.getElementById('loginContainer').style.display = 'block';
+    }
+
+    function formatValue(fieldName, val) {
+      if (val === undefined || val === null || val === '') return '';
+      if (fieldName.includes('生年月日') && !isNaN(val) && Number(val) > 30000 && Number(val) < 60000) {
+        const excelEpoch = new Date(1899, 11, 30);
+        const jsDate = new Date(excelEpoch.getTime() + Number(val) * 24 * 60 * 60 * 1000);
+        return `${jsDate.getFullYear()}/${jsDate.getMonth() + 1}/${jsDate.getDate()}`;
+      }
+      return String(val);
+    }
+
+    function buildFieldCheckboxes() {
+      const container = document.getElementById('fieldCheckboxes');
+      container.innerHTML = '';
+      if (allHeaders.length === 0) return;
+
+      let savedFields = JSON.parse(localStorage.getItem(STORAGE_KEY_FIELDS));
+      if (!savedFields) {
+        const currentYearStr = new Date().getFullYear().toString();
+        savedFields = allHeaders.filter(h => 
+          ['氏名', 'st番号', 'メールアドレス', 'BLENDパス', '在籍状況'].includes(h) || h.includes(currentYearStr)
+        );
+      }
+
+      allHeaders.forEach(header => {
+        const wrapper = document.createElement('label');
+        wrapper.className = 'checkbox-label';
+
+        const chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.value = header;
+        chk.id = 'chk_' + header;
+        chk.checked = savedFields.includes(header);
+        chk.onchange = saveSelectedFields;
+
+        wrapper.appendChild(chk);
+        wrapper.appendChild(document.createTextNode(header));
+        container.appendChild(wrapper);
+      });
+    }
+
+    function buildClassFieldSelects() {
+      let classFields = allHeaders.filter(h => h.includes('クラス'));
+      if (classFields.length === 0) classFields = [...allHeaders];
+      const currentYearStr = new Date().getFullYear().toString();
+
+      const select1 = document.getElementById('classFieldSelect');
+      select1.innerHTML = '';
+      classFields.forEach(field => {
+        const opt = document.createElement('option');
+        opt.value = field;
+        opt.innerText = field;
+        if (field.includes(currentYearStr)) opt.selected = true;
+        select1.appendChild(opt);
+      });
+      if (!select1.value && select1.options.length > 0) select1.selectedIndex = 0;
+
+      const select2 = document.getElementById('cardClassFieldSelect');
+      select2.innerHTML = '';
+      classFields.forEach(field => {
+        const opt = document.createElement('option');
+        opt.value = field;
+        opt.innerText = field;
+        if (field.includes(currentYearStr)) opt.selected = true;
+        select2.appendChild(opt);
+      });
+      if (!select2.value && select2.options.length > 0) select2.selectedIndex = 0;
+    }
+
+    function saveSelectedFields() {
+      const checkboxes = document.querySelectorAll('#fieldCheckboxes input[type="checkbox"]');
+      const selected = [];
+      checkboxes.forEach(chk => { if (chk.checked) selected.push(chk.value); });
+      localStorage.setItem(STORAGE_KEY_FIELDS, JSON.stringify(selected));
+    }
+
+    function selectAll(checkState) {
+      const checkboxes = document.querySelectorAll('#fieldCheckboxes input[type="checkbox"]');
+      checkboxes.forEach(chk => chk.checked = checkState);
+      saveSelectedFields();
+    }
+
+    function getSelectedFields() {
+      const checkboxes = document.querySelectorAll('#fieldCheckboxes input[type="checkbox"]');
+      const selected = [];
+      checkboxes.forEach(chk => { if (chk.checked) selected.push(chk.value); });
+      return selected;
+    }
+
+    function displayStudentCard(found) {
+      const resultBox = document.getElementById('resultBox');
+      const resultContent = document.getElementById('resultContent');
+      const resultTitle = document.getElementById('resultTitle');
+      const resultActionArea = document.getElementById('resultActionArea');
+
+      resultBox.style.display = 'block';
+      resultContent.innerHTML = '';
+      resultActionArea.innerHTML = '';
+
+      if (!found) {
+        resultTitle.innerText = "検索結果：見つかりませんでした";
+        resultContent.innerHTML = `<div class="error-msg">該当する生徒は見つかりませんでした。</div>`;
+        return;
+      }
+
+      const studentName = found['氏名'] || '生徒情報';
+      resultTitle.innerText = `検索結果：${studentName} さん`;
+
+      const selectedFields = getSelectedFields();
+      let copyTextLines = [];
+      let displayedCount = 0;
+
+      selectedFields.forEach(fieldName => {
+        const rawValue = found[fieldName];
+        const formattedValue = formatValue(fieldName, rawValue);
+
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'result-item';
+        itemDiv.innerHTML = `
+          <span class="res-label">${fieldName}</span>
+          <span class="res-value">${formattedValue !== '' ? escapeHtml(formattedValue) : '<span style="color:#64748b; font-size:0.85rem;">(空欄)</span>'}</span>
+        `;
+        resultContent.appendChild(itemDiv);
+        copyTextLines.push(`${fieldName}: ${formattedValue}`);
+        displayedCount++;
+      });
+
+      if (displayedCount === 0) {
+        resultContent.innerHTML = `<div style="color:#94a3b8; font-size:0.85rem; text-align:center; padding:10px;">出力する項目が選択されていません。</div>`;
+        return;
+      }
+
+      lastSearchResultText = copyTextLines.join('\n');
+
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'action-btn copy-btn';
+      copyBtn.innerText = '📋 結果をコピー';
+      copyBtn.onclick = function() {
+        navigator.clipboard.writeText(lastSearchResultText).then(() => {
+          copyBtn.innerText = '✅ コピー完了！';
+          copyBtn.classList.add('copied');
+          setTimeout(() => {
+            copyBtn.innerText = '📋 結果をコピー';
+            copyBtn.classList.remove('copied');
+          }, 2000);
+        }).catch(err => {
+          alert('コピーに失敗しました');
+        });
+      };
+      resultActionArea.appendChild(copyBtn);
+    }
+
+    function searchStudentBySt() {
+      const inputVal = document.getElementById('stInput').value.trim().toLowerCase();
+      if (!inputVal) { alert('st番号を入力してください'); return; }
+      if (allRows.length === 0) { alert('データがありません'); return; }
+
+      const found = allRows.find(row => {
+        const stNum = (row['st番号'] || '').toString().trim().toLowerCase();
+        return stNum === inputVal;
+      });
+      displayStudentCard(found);
+    }
+
+    function searchStudentByClassNum() {
+      const classField = document.getElementById('cardClassFieldSelect').value;
+      const classVal = document.getElementById('cardClassInput').value.trim().toLowerCase();
+      const numVal = document.getElementById('cardNumInput').value.trim();
+
+      if (!classVal || !numVal) { alert('クラス名と番号の両方を入力してください'); return; }
+      if (allRows.length === 0) { alert('データがありません'); return; }
+
+      const prefix = classField.replace('クラス', '');
+      const numFieldCandidates = [prefix + '番', prefix + '番号', '番'];
+      
+      const found = allRows.find(row => {
+        const cVal = (row[classField] || '').toString().trim().toLowerCase();
+        if (cVal !== classVal) return false;
+
+        for (let nf of numFieldCandidates) {
+          if (row[nf] !== undefined) {
+            const nVal = (row[nf] || '').toString().trim();
+            if (nVal === numVal) return true;
+          }
+        }
+        return Object.keys(row).some(k => k.includes('番') && String(row[k]).trim() === numVal && cVal === classVal);
+      });
+
+      displayStudentCard(found);
+    }
+
+    function searchClass() {
+      const classField = document.getElementById('classFieldSelect').value;
+      const classVal = document.getElementById('classInput').value.trim().toLowerCase();
+      
+      const resultBox = document.getElementById('resultBox');
+      const resultContent = document.getElementById('resultContent');
+      const resultTitle = document.getElementById('resultTitle');
+      const resultActionArea = document.getElementById('resultActionArea');
+
+      if (!classVal) { alert('クラス名を入力してください'); return; }
+      if (allRows.length === 0) { alert('データがありません'); return; }
+
+      const matchedRows = allRows.filter(row => {
+        const val = (row[classField] || '').toString().trim().toLowerCase();
+        return val === classVal;
+      });
+
+      resultBox.style.display = 'block';
+      resultContent.innerHTML = '';
+      resultActionArea.innerHTML = '';
+
+      if (matchedRows.length === 0) {
+        resultTitle.innerText = `検索結果：${classField} [${classVal}] (0件)`;
+        resultContent.innerHTML = `<div class="error-msg">${classField} が「${classVal}」に該当する生徒は見つかりませんでした。</div>`;
+        return;
+      }
+
+      resultTitle.innerText = `検索結果：${classField} [${classVal.toUpperCase()}] (${matchedRows.length}名)`;
+
+      const selectedFields = getSelectedFields();
+      if (selectedFields.length === 0) {
+        resultContent.innerHTML = `<div style="color:#94a3b8; font-size:0.85rem; text-align:center; padding:10px;">出力する項目が選択されていません。</div>`;
+        return;
+      }
+
+      const csvBtn = document.createElement('button');
+      csvBtn.className = 'action-btn csv-btn copy-btn';
+      csvBtn.innerText = '📥 CSVダウンロード';
+      csvBtn.onclick = function() {
+        downloadCSV(matchedRows, selectedFields, classVal);
+      };
+      resultActionArea.appendChild(csvBtn);
+
+      const tableContainer = document.createElement('div');
+      tableContainer.className = 'table-container';
+
+      const table = document.createElement('table');
+      table.className = 'class-table';
+
+      const thead = document.createElement('thead');
+      let headerTr = document.createElement('tr');
+      selectedFields.forEach(f => {
+        let th = document.createElement('th
