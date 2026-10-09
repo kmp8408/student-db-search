@@ -303,13 +303,32 @@
 
     function formatValue(fieldName, val) {
       if (val === undefined || val === null || val === '') return '';
-      if (fieldName.includes('生年月日') && !isNaN(val) && Number(val) > 30000 && Number(val) < 60000) {
-        const excelEpoch = new Date(1899, 11, 30);
-        const jsDate = new Date(excelEpoch.getTime() + Number(val) * 24 * 60 * 60 * 1000);
-        return `${jsDate.getFullYear()}/${jsDate.getMonth() + 1}/${jsDate.getDate()}`;
+
+      // 生年月日などの日付フィールドの整形
+      if (fieldName.includes('生年月日') || fieldName.includes('日付') || fieldName.includes('日')) {
+        // 1. スプレッドシートのシリアル値（数値）の場合
+        if (!isNaN(val) && Number(val) > 30000 && Number(val) < 60000) {
+          const excelEpoch = new Date(1899, 11, 30);
+          const jsDate = new Date(excelEpoch.getTime() + Number(val) * 24 * 60 * 60 * 1000);
+          const y = jsDate.getFullYear();
+          const m = String(jsDate.getMonth() + 1).padStart(2, '0');
+          const d = String(jsDate.getDate()).padStart(2, '0');
+          return `${y}/${m}/${d}`;
+        }
+
+        // 2. 日時文字列（ISO文字列や "Sun Dec 23 2012..." など時刻付き文字列）の場合
+        const parsedDate = new Date(val);
+        if (!isNaN(parsedDate.getTime()) && String(val).length > 7 && !/^\d+$/.test(String(val))) {
+          const y = parsedDate.getFullYear();
+          const m = String(parsedDate.getMonth() + 1).padStart(2, '0');
+          const d = String(parsedDate.getDate()).padStart(2, '0');
+          return `${y}/${m}/${d}`;
+        }
       }
+
       return String(val);
     }
+
 
     function buildFieldCheckboxes() {
       const container = document.getElementById('fieldCheckboxes');
