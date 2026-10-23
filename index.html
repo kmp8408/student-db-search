@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>生徒データベース検索くん v1.3.2</title>
+  <title>生徒データベース検索くん v2.0.0</title>
   <style>
-    body { font-family: sans-serif; margin: 8px; background: #1b2e23; color: #e2e8f0; max-width: 650px; margin: 0 auto; padding: 12px; box-sizing: border-box; }
+    body { font-family: sans-serif; margin: 8px; background: #1b2e23; color: #e2e8f0; max-width: 750px; margin: 0 auto; padding: 12px; box-sizing: border-box; }
     * { box-sizing: border-box; }
     
     .header-box { text-align: center; margin-bottom: 8px; }
-    h2 { font-size: 1.2rem; margin: 0; display: inline-flex; align-items: center; gap: 8px; color: #f8fafc; }
-    .version-tag { font-size: 0.7rem; background: #d97706; color: #fff; padding: 2px 8px; border-radius: 10px; font-weight: normal; }
+    h2 { font-size: 1.25rem; margin: 0; display: inline-flex; align-items: center; gap: 8px; color: #f8fafc; }
+    .version-tag { font-size: 0.7rem; background: #0284c7; color: #fff; padding: 2px 8px; border-radius: 10px; font-weight: normal; }
     .sub-desc { text-align: center; font-size: 0.75rem; color: #94a3b8; margin-top: 4px; margin-bottom: 12px; }
     
-    /* ユーザーバー（ログイン中表示） */
+    /* ユーザーバー */
     .user-bar { display: none; justify-content: space-between; align-items: center; background: #18281e; padding: 6px 12px; border-radius: 6px; border: 1px solid #334e3f; font-size: 0.8rem; margin-bottom: 12px; }
     .user-name { color: #5eead4; font-weight: bold; }
     .logout-btn { background: #475569; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
@@ -30,7 +30,7 @@
     .btn-login-submit:hover { background: #0f766e; }
     .btn-login-submit:disabled { background: #475569; cursor: not-allowed; }
 
-    /* メイン機能エリア（初期は非表示） */
+    /* メイン機能エリア */
     #mainAppArea { display: none; }
 
     .card { background: #23382c; padding: 12px; border-radius: 8px; border: 1px solid #334e3f; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); width: 100%; overflow: hidden; }
@@ -38,59 +38,49 @@
     .card-title a { color: #5eead4; text-decoration: none; }
     .card-title a:hover { text-decoration: underline; }
 
-    /* フィールド選択チェックボックス */
-    .checkbox-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 6px; max-height: 140px; overflow-y: auto; padding: 6px; border: 1px solid #334e3f; background: #18281e; border-radius: 4px; }
+    /* 出力項目選択チェックボックス */
+    .checkbox-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 6px; max-height: 140px; overflow-y: auto; padding: 6px; border: 1px solid #334e3f; background: #18281e; border-radius: 4px; }
     .checkbox-label { font-size: 0.8rem; display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; color: #cbd5e1; }
     .checkbox-label input[type="checkbox"] { accent-color: #0d9488; }
 
-    /* 入力行 */
-    .search-row { display: flex; gap: 6px; margin-top: 8px; width: 100%; }
-    input[type="text"], select { width: 100%; min-width: 0; padding: 8px; font-size: 0.9rem; border: 1px solid #475569; border-radius: 4px; background: #18281e; color: #f8fafc; }
-    input[type="text"]::placeholder { color: #64748b; }
+    /* 条件行コンテナ */
+    .criteria-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .criteria-row { display: flex; gap: 6px; align-items: center; }
+    .criteria-row select { flex: 1.2; min-width: 110px; padding: 8px; font-size: 0.85rem; border: 1px solid #475569; border-radius: 4px; background: #18281e; color: #f8fafc; }
+    .criteria-row input { flex: 2; min-width: 120px; padding: 8px; font-size: 0.85rem; border: 1px solid #475569; border-radius: 4px; background: #18281e; color: #f8fafc; }
+    .remove-criteria-btn { background: #b91c1c; color: #fff; border: none; width: 32px; height: 34px; border-radius: 4px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .remove-criteria-btn:hover { background: #991b1b; }
 
-    /* クラス・番号入力のレイアウト */
-    .class-num-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; width: 100%; }
-    .class-num-row select { flex: 1 1 100px; min-width: 0; }
-    .class-num-row input[type="text"] { flex: 1 1 90px; min-width: 0; }
-    .class-num-row input.num-input { flex: 0 1 65px; min-width: 0; }
-    .class-num-row button { flex: 0 1 auto; }
+    .search-action-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+    .btn-add-crit { background: #334e3f; color: #5eead4; border: 1px solid #0d9488; padding: 7px 12px; font-size: 0.8rem; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    .btn-add-crit:hover { background: #3d5e4b; }
+    .btn-search-exec { background: #0d9488; color: #fff; border: none; padding: 8px 20px; font-size: 0.95rem; font-weight: bold; border-radius: 4px; cursor: pointer; margin-left: auto; }
+    .btn-search-exec:hover { background: #0f766e; }
 
-    /* ボタンデザイン */
-    button.action-btn { background: #0d9488; color: #fff; border: none; padding: 8px 14px; font-size: 0.9rem; font-weight: bold; border-radius: 4px; cursor: pointer; white-space: nowrap; transition: background 0.2s; }
-    button.action-btn:hover { background: #0f766e; }
-    button.action-btn:active { background: #115e59; }
+    /* 結果エリア */
+    .result-box { background: #23382c; padding: 12px; border-radius: 8px; border: 1px solid #334e3f; display: none; width: 100%; overflow: hidden; margin-top: 12px; }
+    .result-header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0d9488; padding-bottom: 6px; margin-bottom: 8px; flex-wrap: wrap; gap: 6px; }
+    .result-count-badge { font-weight: bold; font-size: 0.9rem; color: #f8fafc; }
+    .result-count-badge span { color: #5eead4; font-size: 1.1rem; }
 
-    button.csv-btn { background: #16a34a; }
-    button.csv-btn:hover { background: #15803d; }
-
-    button.copy-btn { background: #475569; font-size: 0.8rem; padding: 6px 12px; }
-    button.copy-btn:hover { background: #334155; }
-    button.copy-btn.copied { background: #16a34a; }
-
-    /* 検索結果・一覧表示エリア */
-    .result-box { background: #23382c; padding: 12px; border-radius: 8px; border: 1px solid #334e3f; display: none; width: 100%; overflow: hidden; }
-    .result-item { padding: 8px 0; border-bottom: 1px dashed #334e3f; font-size: 0.9rem; display: flex; flex-direction: column; }
-    .result-item:last-child { border-bottom: none; }
-    .res-label { font-size: 0.7rem; color: #94a3b8; font-weight: bold; }
-    .res-value { font-size: 1rem; color: #f8fafc; word-break: break-all; margin-top: 2px; }
-    .error-msg { color: #f87171; font-weight: bold; text-align: center; padding: 10px; font-size: 0.85rem; }
-
-    /* クラス一括検索のテーブル表示 */
-    .table-container { overflow-x: auto; margin-top: 8px; border-radius: 4px; border: 1px solid #334e3f; max-width: 100%; }
-    table.class-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; background: #18281e; color: #e2e8f0; }
-    table.class-table th, table.class-table td { border: 1px solid #334e3f; padding: 6px 8px; text-align: left; white-space: nowrap; }
-    table.class-table th { background: #1f3529; font-weight: bold; color: #5eead4; }
+    .btn-csv { background: #16a34a; color: #fff; border: none; padding: 6px 12px; font-size: 0.8rem; font-weight: bold; border-radius: 4px; cursor: pointer; }
+    .btn-csv:hover { background: #15803d; }
     
-    .status-bar { text-align: center; font-size: 0.75rem; color: #94a3b8; margin-bottom: 12px; }
-    .result-header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0d9488; padding-bottom: 4px; margin-bottom: 8px; flex-wrap: wrap; gap: 6px; }
+    .table-container { overflow-x: auto; margin-top: 8px; border-radius: 4px; border: 1px solid #334e3f; max-height: 480px; }
+    table.result-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; background: #18281e; color: #e2e8f0; }
+    table.result-table th, table.result-table td { border: 1px solid #334e3f; padding: 6px 8px; text-align: left; white-space: nowrap; }
+    table.result-table th { background: #1f3529; font-weight: bold; color: #5eead4; position: sticky; top: 0; z-index: 2; }
+    table.result-table tr:hover { background: #23382c; }
+
+    .status-bar { text-align: center; font-size: 0.75rem; color: #94a3b8; margin-bottom: 8px; }
   </style>
 </head>
 <body>
 
   <div class="header-box">
-    <h2>🎓 生徒データベース検索くん <span class="version-tag">v1.3.2</span></h2>
+    <h2>🎓 生徒データベース検索くん <span class="version-tag">v2.0.0</span></h2>
   </div>
-  <div class="sub-desc">教員専用認証システム ＆ 生徒情報データベース</div>
+  <div class="sub-desc">全フィールド対応 自由複合条件検索 ＆ CSVエクスポート</div>
 
   <!-- ログイン中の教員バー -->
   <div class="user-bar" id="userBar">
@@ -115,12 +105,12 @@
 
   <!-- メイン検索アプリ領域 -->
   <div id="mainAppArea">
-    <div class="status-bar" id="statusBar">✅ 認証完了</div>
+    <div class="status-bar" id="statusBar">✅ データベース準備完了</div>
 
     <!-- 1. 出力項目選択 -->
     <div class="card">
       <div class="card-title">
-        <span>1. 出力・ダウンロードする項目を選択（記憶されます）</span>
+        <span>1. 出力・表示する項目を選択（記憶されます）</span>
         <span style="font-size:0.75rem; font-weight:normal;"><a href="#" id="selectAllBtn">全選択</a> / <a href="#" id="deselectAllBtn">解除</a></span>
       </div>
       <div class="checkbox-group" id="fieldCheckboxes">
@@ -128,63 +118,43 @@
       </div>
     </div>
 
-    <!-- 2. 個別検索（st番号） -->
+    <!-- 2. 自由複合条件検索 -->
     <div class="card">
-      <div class="card-title">2. st番号で個別検索</div>
-      <div class="search-row">
-        <input type="text" id="stInput" placeholder="例: st9826001">
-        <button class="action-btn" id="searchStBtn">検索</button>
+      <div class="card-title">2. 検索条件の設定（AND検索・部分一致）</div>
+      <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:8px;">条件を複数指定して絞り込めます（空欄の条件行は無視されます）</div>
+      
+      <div class="criteria-list" id="criteriaList">
+        <!-- 初期条件行を動的生成 -->
+      </div>
+
+      <div class="search-action-bar">
+        <button type="button" class="btn-add-crit" id="addCriteriaBtn">➕ 条件を追加</button>
+        <button type="button" class="btn-search-exec" id="executeSearchBtn">🔍 検索実行</button>
       </div>
     </div>
 
-    <!-- 2-2. 個別検索（クラス名 ＆ 番号） -->
-    <div class="card">
-      <div class="card-title">2b. クラス・番号で個別検索</div>
-      <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:4px;">対象のクラスフィールドを選び、クラスと番号を入力</div>
-      <div class="class-num-row">
-        <select id="cardClassFieldSelect">
-          <!-- 動的生成 -->
-        </select>
-        <input type="text" id="cardClassInput" placeholder="M3A">
-        <input type="text" id="cardNumInput" class="num-input" placeholder="1">
-        <button class="action-btn" id="searchClassNumBtn">検索</button>
-      </div>
-    </div>
-
-    <!-- 3. クラス別一括検索 ＆ CSV出力 -->
-    <div class="card">
-      <div class="card-title">3. クラス別一括検索 ＆ CSVダウンロード</div>
-      <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:6px;">対象のクラスフィールドとクラス名（例: M3A）を指定</div>
-      <div class="search-row">
-        <select id="classFieldSelect" style="flex: 1.2;">
-          <!-- 動的生成 -->
-        </select>
-        <input type="text" id="classInput" placeholder="例: M3A" style="flex: 1;">
-        <button class="action-btn" id="searchClassBtn">検索</button>
-      </div>
-    </div>
-
-    <!-- 結果表示エリア -->
+    <!-- 検索結果エリア -->
     <div class="result-box" id="resultBox">
       <div class="result-header-row">
-        <span id="resultTitle" style="font-weight: bold; font-size: 0.85rem; color: #f8fafc;">検索結果</span>
-        <div id="resultActionArea"></div>
+        <div class="result-count-badge" id="resultBadge">検索結果: <span>0</span> 名</div>
+        <button type="button" class="btn-csv" id="downloadCsvBtn">📥 CSVダウンロード</button>
       </div>
-      <div id="resultContent"></div>
+      <div class="table-container" id="tableContainer">
+        <!-- テーブル生成 -->
+      </div>
     </div>
   </div>
 
   <script>
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwzbUMOPgQaGan2cK_illXQ8XQZy3Xf4guG_k1O3F6mLCdNWPIDe9-_bvH4qApQ5JbcMA/exec";
-    const STORAGE_KEY_FIELDS = 'student_db_selected_fields_v12';
-    const CACHE_KEY_STUDENTS = 'student_db_cache_data_v12';
-    const SESSION_KEY_TEACHER = 'student_db_logged_teacher_v12';
+    const STORAGE_KEY_FIELDS = 'student_db_v2_selected_fields';
+    const CACHE_KEY_STUDENTS = 'student_db_v2_cache';
+    const SESSION_KEY_TEACHER = 'student_db_v2_teacher';
 
     let allHeaders = [];
     let allRows = [];
-    let lastSearchResultText = "";
+    let currentMatchedRows = [];
 
-    // イベントリスナーの初期化
     window.addEventListener('DOMContentLoaded', () => {
       // ログインボタン
       document.getElementById('loginBtn').addEventListener('click', executeLogin);
@@ -192,25 +162,19 @@
         if (e.key === 'Enter') executeLogin();
       });
 
-      // ログアウトボタン
+      // ログアウト
       document.getElementById('logoutBtn').addEventListener('click', logout);
 
-      // 全選択 / 解除
+      // 項目全選択・解除
       document.getElementById('selectAllBtn').addEventListener('click', (e) => { e.preventDefault(); selectAll(true); });
       document.getElementById('deselectAllBtn').addEventListener('click', (e) => { e.preventDefault(); selectAll(false); });
 
-      // 検索ボタン群
-      document.getElementById('searchStBtn').addEventListener('click', searchStudentBySt);
-      document.getElementById('stInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') searchStudentBySt(); });
+      // 条件追加・検索実行
+      document.getElementById('addCriteriaBtn').addEventListener('click', () => addCriteriaRow());
+      document.getElementById('executeSearchBtn').addEventListener('click', executeSearch);
+      document.getElementById('downloadCsvBtn').addEventListener('click', downloadCurrentCSV);
 
-      document.getElementById('searchClassNumBtn').addEventListener('click', searchStudentByClassNum);
-      document.getElementById('cardClassInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') searchStudentByClassNum(); });
-      document.getElementById('cardNumInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') searchStudentByClassNum(); });
-
-      document.getElementById('searchClassBtn').addEventListener('click', searchClass);
-      document.getElementById('classInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') searchClass(); });
-
-      // セッション復元チェック
+      // セッション復元
       try {
         const savedTeacher = sessionStorage.getItem(SESSION_KEY_TEACHER);
         const savedData = localStorage.getItem(CACHE_KEY_STUDENTS);
@@ -221,14 +185,14 @@
           allRows = parsed.rows || [];
           showApp(teacherObj);
           buildFieldCheckboxes();
-          buildClassFieldSelects();
+          initCriteriaRows();
         }
       } catch (e) {
         sessionStorage.removeItem(SESSION_KEY_TEACHER);
       }
     });
 
-    // ログイン実行処理
+    // ログイン処理
     function executeLogin() {
       const idVal = document.getElementById('loginId').value.trim();
       const passVal = document.getElementById('loginPass').value.trim();
@@ -245,7 +209,6 @@
       loginBtn.disabled = true;
       loginBtn.innerText = '🔄 認証中...';
 
-      // コールバック
       window.handleAppLogin = function(res) {
         loginBtn.disabled = false;
         loginBtn.innerText = 'ログインして利用開始';
@@ -254,7 +217,6 @@
           allHeaders = res.headers || [];
           allRows = res.rows || [];
 
-          // セッション＆キャッシュ保存
           sessionStorage.setItem(SESSION_KEY_TEACHER, JSON.stringify(res.teacher || { name: '教員' }));
           try {
             localStorage.setItem(CACHE_KEY_STUDENTS, JSON.stringify({ headers: allHeaders, rows: allRows }));
@@ -262,7 +224,7 @@
 
           showApp(res.teacher || { name: '教員' });
           buildFieldCheckboxes();
-          buildClassFieldSelects();
+          initCriteriaRows();
         } else {
           errBox.innerText = res && res.message ? res.message : '⚠️ IDまたはパスワードが正しくありません。';
           errBox.style.display = 'block';
@@ -285,7 +247,7 @@
       document.getElementById('userBar').style.display = 'flex';
       document.getElementById('userNameLabel').innerText = (teacher && teacher.name) ? teacher.name : '教員';
       document.getElementById('mainAppArea').style.display = 'block';
-      document.getElementById('statusBar').innerText = `✅ 認証完了（全 ${allRows.length} 件の生徒データ）`;
+      document.getElementById('statusBar').innerText = `✅ データベース準備完了（全 ${allRows.length} 名のデータ）`;
     }
 
     function logout() {
@@ -293,6 +255,7 @@
       localStorage.removeItem(CACHE_KEY_STUDENTS);
       allHeaders = [];
       allRows = [];
+      currentMatchedRows = [];
       document.getElementById('loginId').value = '';
       document.getElementById('loginPass').value = '';
       document.getElementById('mainAppArea').style.display = 'none';
@@ -301,12 +264,12 @@
       document.getElementById('loginContainer').style.display = 'block';
     }
 
+    // 生年月日の日付整形（YYYY/MM/DD）
     function formatValue(fieldName, val) {
       if (val === undefined || val === null || val === '') return '';
 
-      // 生年月日などの日付フィールドの整形
       if (fieldName.includes('生年月日') || fieldName.includes('日付') || fieldName.includes('日')) {
-        // 1. スプレッドシートのシリアル値（数値）の場合
+        // シリアル値
         if (!isNaN(val) && Number(val) > 30000 && Number(val) < 60000) {
           const excelEpoch = new Date(1899, 11, 30);
           const jsDate = new Date(excelEpoch.getTime() + Number(val) * 24 * 60 * 60 * 1000);
@@ -315,8 +278,7 @@
           const d = String(jsDate.getDate()).padStart(2, '0');
           return `${y}/${m}/${d}`;
         }
-
-        // 2. 日時文字列（ISO文字列や "Sun Dec 23 2012..." など時刻付き文字列）の場合
+        // 日時文字列（ISO文字列など）
         const parsedDate = new Date(val);
         if (!isNaN(parsedDate.getTime()) && String(val).length > 7 && !/^\d+$/.test(String(val))) {
           const y = parsedDate.getFullYear();
@@ -325,11 +287,10 @@
           return `${y}/${m}/${d}`;
         }
       }
-
       return String(val);
     }
 
-
+    // 出力項目のチェックボックス生成
     function buildFieldCheckboxes() {
       const container = document.getElementById('fieldCheckboxes');
       container.innerHTML = '';
@@ -339,7 +300,7 @@
       if (!savedFields) {
         const currentYearStr = new Date().getFullYear().toString();
         savedFields = allHeaders.filter(h => 
-          ['氏名', 'st番号', 'メールアドレス', 'BLENDパス', '在籍状況'].includes(h) || h.includes(currentYearStr)
+          ['氏名', 'st番号', '性別', 'メールアドレス', 'BLENDパス', '在籍状況'].includes(h) || h.includes(currentYearStr)
         );
       }
 
@@ -358,34 +319,6 @@
         wrapper.appendChild(document.createTextNode(header));
         container.appendChild(wrapper);
       });
-    }
-
-    function buildClassFieldSelects() {
-      let classFields = allHeaders.filter(h => h.includes('クラス'));
-      if (classFields.length === 0) classFields = [...allHeaders];
-      const currentYearStr = new Date().getFullYear().toString();
-
-      const select1 = document.getElementById('classFieldSelect');
-      select1.innerHTML = '';
-      classFields.forEach(field => {
-        const opt = document.createElement('option');
-        opt.value = field;
-        opt.innerText = field;
-        if (field.includes(currentYearStr)) opt.selected = true;
-        select1.appendChild(opt);
-      });
-      if (!select1.value && select1.options.length > 0) select1.selectedIndex = 0;
-
-      const select2 = document.getElementById('cardClassFieldSelect');
-      select2.innerHTML = '';
-      classFields.forEach(field => {
-        const opt = document.createElement('option');
-        opt.value = field;
-        opt.innerText = field;
-        if (field.includes(currentYearStr)) opt.selected = true;
-        select2.appendChild(opt);
-      });
-      if (!select2.value && select2.options.length > 0) select2.selectedIndex = 0;
     }
 
     function saveSelectedFields() {
@@ -408,172 +341,134 @@
       return selected;
     }
 
-    function displayStudentCard(found) {
-      const resultBox = document.getElementById('resultBox');
-      const resultContent = document.getElementById('resultContent');
-      const resultTitle = document.getElementById('resultTitle');
-      const resultActionArea = document.getElementById('resultActionArea');
-
-      resultBox.style.display = 'block';
-      resultContent.innerHTML = '';
-      resultActionArea.innerHTML = '';
-
-      if (!found) {
-        resultTitle.innerText = "検索結果：見つかりませんでした";
-        resultContent.innerHTML = `<div class="error-msg">該当する生徒は見つかりませんでした。</div>`;
-        return;
-      }
-
-      const studentName = found['氏名'] || '生徒情報';
-      resultTitle.innerText = `検索結果：${studentName} さん`;
-
-      const selectedFields = getSelectedFields();
-      let copyTextLines = [];
-      let displayedCount = 0;
-
-      selectedFields.forEach(fieldName => {
-        const rawValue = found[fieldName];
-        const formattedValue = formatValue(fieldName, rawValue);
-
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'result-item';
-        itemDiv.innerHTML = `
-          <span class="res-label">${fieldName}</span>
-          <span class="res-value">${formattedValue !== '' ? escapeHtml(formattedValue) : '<span style="color:#64748b; font-size:0.85rem;">(空欄)</span>'}</span>
-        `;
-        resultContent.appendChild(itemDiv);
-        copyTextLines.push(`${fieldName}: ${formattedValue}`);
-        displayedCount++;
-      });
-
-      if (displayedCount === 0) {
-        resultContent.innerHTML = `<div style="color:#94a3b8; font-size:0.85rem; text-align:center; padding:10px;">出力する項目が選択されていません。</div>`;
-        return;
-      }
-
-      lastSearchResultText = copyTextLines.join('\n');
-
-      const copyBtn = document.createElement('button');
-      copyBtn.className = 'action-btn copy-btn';
-      copyBtn.innerText = '📋 結果をコピー';
-      copyBtn.onclick = function() {
-        navigator.clipboard.writeText(lastSearchResultText).then(() => {
-          copyBtn.innerText = '✅ コピー完了！';
-          copyBtn.classList.add('copied');
-          setTimeout(() => {
-            copyBtn.innerText = '📋 結果をコピー';
-            copyBtn.classList.remove('copied');
-          }, 2000);
-        }).catch(err => {
-          alert('コピーに失敗しました');
-        });
-      };
-      resultActionArea.appendChild(copyBtn);
+    // 検索条件行の管理
+    function initCriteriaRows() {
+      const container = document.getElementById('criteriaList');
+      container.innerHTML = '';
+      // 初期状態で「氏名」と「クラス」の2行をセット
+      addCriteriaRow('氏名', '');
+      const classField = allHeaders.find(h => h.includes('クラス')) || (allHeaders[1] || '');
+      addCriteriaRow(classField, '');
     }
 
-    function searchStudentBySt() {
-      const inputVal = document.getElementById('stInput').value.trim().toLowerCase();
-      if (!inputVal) { alert('st番号を入力してください'); return; }
-      if (allRows.length === 0) { alert('データがありません'); return; }
+    function addCriteriaRow(defaultField = '', defaultValue = '') {
+      const container = document.getElementById('criteriaList');
+      const rowDiv = document.createElement('div');
+      rowDiv.className = 'criteria-row';
 
-      const found = allRows.find(row => {
-        const stNum = (row['st番号'] || '').toString().trim().toLowerCase();
-        return stNum === inputVal;
+      const select = document.createElement('select');
+      allHeaders.forEach(h => {
+        const opt = document.createElement('option');
+        opt.value = h;
+        opt.innerText = h;
+        if (h === defaultField) opt.selected = true;
+        select.appendChild(opt);
       });
-      displayStudentCard(found);
-    }
 
-    function searchStudentByClassNum() {
-      const classField = document.getElementById('cardClassFieldSelect').value;
-      const classVal = document.getElementById('cardClassInput').value.trim().toLowerCase();
-      const numVal = document.getElementById('cardNumInput').value.trim();
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = 'キーワードを入力（例: 山、男、M3A）';
+      input.value = defaultValue;
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') executeSearch();
+      });
 
-      if (!classVal || !numVal) { alert('クラス名と番号の両方を入力してください'); return; }
-      if (allRows.length === 0) { alert('データがありません'); return; }
-
-      const prefix = classField.replace('クラス', '');
-      const numFieldCandidates = [prefix + '番', prefix + '番号', '番'];
-      
-      const found = allRows.find(row => {
-        const cVal = (row[classField] || '').toString().trim().toLowerCase();
-        if (cVal !== classVal) return false;
-
-        for (let nf of numFieldCandidates) {
-          if (row[nf] !== undefined) {
-            const nVal = (row[nf] || '').toString().trim();
-            if (nVal === numVal) return true;
-          }
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'remove-criteria-btn';
+      removeBtn.innerText = '✕';
+      removeBtn.title = 'この条件を削除';
+      removeBtn.addEventListener('click', () => {
+        // 条件が1行だけの場合は削除せず値を空にする
+        if (container.querySelectorAll('.criteria-row').length > 1) {
+          container.removeChild(rowDiv);
+        } else {
+          input.value = '';
         }
-        return Object.keys(row).some(k => k.includes('番') && String(row[k]).trim() === numVal && cVal === classVal);
       });
 
-      displayStudentCard(found);
+      rowDiv.appendChild(select);
+      rowDiv.appendChild(input);
+      rowDiv.appendChild(removeBtn);
+      container.appendChild(rowDiv);
     }
 
-    function searchClass() {
-      const classField = document.getElementById('classFieldSelect').value;
-      const classVal = document.getElementById('classInput').value.trim().toLowerCase();
-      
-      const resultBox = document.getElementById('resultBox');
-      const resultContent = document.getElementById('resultContent');
-      const resultTitle = document.getElementById('resultTitle');
-      const resultActionArea = document.getElementById('resultActionArea');
-
-      if (!classVal) { alert('クラス名を入力してください'); return; }
-      if (allRows.length === 0) { alert('データがありません'); return; }
-
-      const matchedRows = allRows.filter(row => {
-        const val = (row[classField] || '').toString().trim().toLowerCase();
-        return val === classVal;
-      });
-
-      resultBox.style.display = 'block';
-      resultContent.innerHTML = '';
-      resultActionArea.innerHTML = '';
-
-      if (matchedRows.length === 0) {
-        resultTitle.innerText = `検索結果：${classField} [${classVal}] (0件)`;
-        resultContent.innerHTML = `<div class="error-msg">${classField} が「${classVal}」に該当する生徒は見つかりませんでした。</div>`;
+    // 自由複合条件検索の実行
+    function executeSearch() {
+      if (allRows.length === 0) {
+        alert('生徒データが読み込まれていません。');
         return;
       }
 
-      resultTitle.innerText = `検索結果：${classField} [${classVal.toUpperCase()}] (${matchedRows.length}名)`;
+      const rows = document.querySelectorAll('.criteria-row');
+      const activeCriteria = [];
+
+      rows.forEach(r => {
+        const field = r.querySelector('select').value;
+        const val = r.querySelector('input').value.trim().toLowerCase();
+        if (val !== '') {
+          activeCriteria.push({ field: field, value: val });
+        }
+      });
+
+      if (activeCriteria.length === 0) {
+        alert('少なくとも1つ以上の検索キーワードを入力してください。');
+        return;
+      }
+
+      // AND検索（全条件を満たす行のみ抽出）
+      currentMatchedRows = allRows.filter(row => {
+        return activeCriteria.every(crit => {
+          const rawCell = row[crit.field];
+          const cellStr = formatValue(crit.field, rawCell).toString().trim().toLowerCase();
+          return cellStr.includes(crit.value);
+        });
+      });
+
+      renderSearchResults(currentMatchedRows);
+    }
+
+    // 検索結果テーブルの描画
+    function renderSearchResults(matched) {
+      const resultBox = document.getElementById('resultBox');
+      const badge = document.getElementById('resultBadge');
+      const tableContainer = document.getElementById('tableContainer');
+
+      resultBox.style.display = 'block';
+      badge.innerHTML = `該当者: <span>${matched.length}</span> 名`;
+      tableContainer.innerHTML = '';
+
+      if (matched.length === 0) {
+        tableContainer.innerHTML = `<div style="color:#f87171; text-align:center; padding:15px; font-weight:bold;">指定した条件に一致する生徒は見つかりませんでした。</div>`;
+        return;
+      }
 
       const selectedFields = getSelectedFields();
       if (selectedFields.length === 0) {
-        resultContent.innerHTML = `<div style="color:#94a3b8; font-size:0.85rem; text-align:center; padding:10px;">出力する項目が選択されていません。</div>`;
+        tableContainer.innerHTML = `<div style="color:#94a3b8; text-align:center; padding:15px;">出力する項目が選択されていません。「1. 出力項目」で選択してください。</div>`;
         return;
       }
 
-      const csvBtn = document.createElement('button');
-      csvBtn.className = 'action-btn csv-btn copy-btn';
-      csvBtn.innerText = '📥 CSVダウンロード';
-      csvBtn.onclick = function() {
-        downloadCSV(matchedRows, selectedFields, classVal);
-      };
-      resultActionArea.appendChild(csvBtn);
-
-      const tableContainer = document.createElement('div');
-      tableContainer.className = 'table-container';
-
       const table = document.createElement('table');
-      table.className = 'class-table';
+      table.className = 'result-table';
 
+      // ヘッダー行
       const thead = document.createElement('thead');
-      let headerTr = document.createElement('tr');
+      const headTr = document.createElement('tr');
       selectedFields.forEach(f => {
-        let th = document.createElement('th');
+        const th = document.createElement('th');
         th.innerText = f;
-        headerTr.appendChild(th);
+        headTr.appendChild(th);
       });
-      thead.appendChild(headerTr);
+      thead.appendChild(headTr);
       table.appendChild(thead);
 
+      // データ行
       const tbody = document.createElement('tbody');
-      matchedRows.forEach(row => {
-        let tr = document.createElement('tr');
+      matched.forEach(row => {
+        const tr = document.createElement('tr');
         selectedFields.forEach(f => {
-          let td = document.createElement('td');
+          const td = document.createElement('td');
           td.innerText = formatValue(f, row[f]);
           tr.appendChild(td);
         });
@@ -582,15 +477,28 @@
       table.appendChild(tbody);
       tableContainer.appendChild(table);
 
-      resultContent.appendChild(tableContainer);
+      // 結果位置へスムーズにスクロール
+      resultBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    function downloadCSV(rows, fields, className) {
-      const csvRows = [];
-      csvRows.push(fields.map(f => `"${f.replace(/"/g, '""')}"`).join(','));
+    // 現在の検索結果をCSVダウンロード
+    function downloadCurrentCSV() {
+      if (!currentMatchedRows || currentMatchedRows.length === 0) {
+        alert('ダウンロード対象の生徒データがありません。');
+        return;
+      }
 
-      rows.forEach(row => {
-        const values = fields.map(f => {
+      const selectedFields = getSelectedFields();
+      if (selectedFields.length === 0) {
+        alert('出力項目が選択されていません。');
+        return;
+      }
+
+      const csvRows = [];
+      csvRows.push(selectedFields.map(f => `"${f.replace(/"/g, '""')}"`).join(','));
+
+      currentMatchedRows.forEach(row => {
+        const values = selectedFields.map(f => {
           const val = formatValue(f, row[f]);
           return `"${val.replace(/"/g, '""')}"`;
         });
@@ -601,21 +509,11 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `student_list_${className}_${new Date().toISOString().slice(0,10)}.csv`;
+      a.download = `student_search_${new Date().toISOString().slice(0,10)}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    }
-
-    function escapeHtml(str) {
-      if (!str) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
     }
   </script>
 </body>
