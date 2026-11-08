@@ -3,23 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>生徒データベース検索くん v2.0.0</title>
+  <title>生徒データベース検索くん v2.1.0</title>
   <style>
     body { font-family: sans-serif; margin: 8px; background: #1b2e23; color: #e2e8f0; max-width: 750px; margin: 0 auto; padding: 12px; box-sizing: border-box; }
     * { box-sizing: border-box; }
-    
     .header-box { text-align: center; margin-bottom: 8px; }
     h2 { font-size: 1.25rem; margin: 0; display: inline-flex; align-items: center; gap: 8px; color: #f8fafc; }
     .version-tag { font-size: 0.7rem; background: #0284c7; color: #fff; padding: 2px 8px; border-radius: 10px; font-weight: normal; }
     .sub-desc { text-align: center; font-size: 0.75rem; color: #94a3b8; margin-top: 4px; margin-bottom: 12px; }
-    
-    /* ユーザーバー */
     .user-bar { display: none; justify-content: space-between; align-items: center; background: #18281e; padding: 6px 12px; border-radius: 6px; border: 1px solid #334e3f; font-size: 0.8rem; margin-bottom: 12px; }
     .user-name { color: #5eead4; font-weight: bold; }
     .logout-btn { background: #475569; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
     .logout-btn:hover { background: #334155; }
-
-    /* ログイン画面エリア */
     .login-container { background: #23382c; padding: 20px 16px; border-radius: 8px; border: 1px solid #334e3f; box-shadow: 0 4px 6px rgba(0,0,0,0.2); margin-top: 20px; }
     .login-title { font-weight: bold; font-size: 1rem; color: #f8fafc; text-align: center; margin-bottom: 16px; border-bottom: 2px solid #0d9488; padding-bottom: 6px; }
     .login-field { margin-bottom: 12px; }
@@ -29,66 +24,53 @@
     .btn-login-submit { width: 100%; background: #0d9488; color: #fff; border: none; padding: 12px; font-size: 1rem; font-weight: bold; border-radius: 4px; cursor: pointer; margin-top: 8px; }
     .btn-login-submit:hover { background: #0f766e; }
     .btn-login-submit:disabled { background: #475569; cursor: not-allowed; }
-
-    /* メイン機能エリア */
     #mainAppArea { display: none; }
-
     .card { background: #23382c; padding: 12px; border-radius: 8px; border: 1px solid #334e3f; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); width: 100%; overflow: hidden; }
     .card-title { font-weight: bold; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 8px; border-bottom: 2px solid #0d9488; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
     .card-title a { color: #5eead4; text-decoration: none; }
     .card-title a:hover { text-decoration: underline; }
-
-    /* 出力項目選択チェックボックス */
     .checkbox-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 6px; max-height: 140px; overflow-y: auto; padding: 6px; border: 1px solid #334e3f; background: #18281e; border-radius: 4px; }
     .checkbox-label { font-size: 0.8rem; display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; color: #cbd5e1; }
     .checkbox-label input[type="checkbox"] { accent-color: #0d9488; }
-
-    /* 条件行コンテナ */
     .criteria-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
     .criteria-row { display: flex; gap: 6px; align-items: center; }
     .criteria-row select { flex: 1.2; min-width: 110px; padding: 8px; font-size: 0.85rem; border: 1px solid #475569; border-radius: 4px; background: #18281e; color: #f8fafc; }
     .criteria-row input { flex: 2; min-width: 120px; padding: 8px; font-size: 0.85rem; border: 1px solid #475569; border-radius: 4px; background: #18281e; color: #f8fafc; }
     .remove-criteria-btn { background: #b91c1c; color: #fff; border: none; width: 32px; height: 34px; border-radius: 4px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .remove-criteria-btn:hover { background: #991b1b; }
-
     .search-action-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
     .btn-add-crit { background: #334e3f; color: #5eead4; border: 1px solid #0d9488; padding: 7px 12px; font-size: 0.8rem; border-radius: 4px; cursor: pointer; font-weight: bold; }
     .btn-add-crit:hover { background: #3d5e4b; }
     .btn-search-exec { background: #0d9488; color: #fff; border: none; padding: 8px 20px; font-size: 0.95rem; font-weight: bold; border-radius: 4px; cursor: pointer; margin-left: auto; }
     .btn-search-exec:hover { background: #0f766e; }
-
-    /* 結果エリア */
+    .btn-search-exec:disabled { background: #475569; cursor: not-allowed; }
     .result-box { background: #23382c; padding: 12px; border-radius: 8px; border: 1px solid #334e3f; display: none; width: 100%; overflow: hidden; margin-top: 12px; }
     .result-header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0d9488; padding-bottom: 6px; margin-bottom: 8px; flex-wrap: wrap; gap: 6px; }
     .result-count-badge { font-weight: bold; font-size: 0.9rem; color: #f8fafc; }
     .result-count-badge span { color: #5eead4; font-size: 1.1rem; }
-
     .btn-csv { background: #16a34a; color: #fff; border: none; padding: 6px 12px; font-size: 0.8rem; font-weight: bold; border-radius: 4px; cursor: pointer; }
     .btn-csv:hover { background: #15803d; }
-    
+    .btn-csv:disabled { background: #475569; cursor: not-allowed; }
     .table-container { overflow-x: auto; margin-top: 8px; border-radius: 4px; border: 1px solid #334e3f; max-height: 480px; }
     table.result-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; background: #18281e; color: #e2e8f0; }
     table.result-table th, table.result-table td { border: 1px solid #334e3f; padding: 6px 8px; text-align: left; white-space: nowrap; }
     table.result-table th { background: #1f3529; font-weight: bold; color: #5eead4; position: sticky; top: 0; z-index: 2; }
     table.result-table tr:hover { background: #23382c; }
-
     .status-bar { text-align: center; font-size: 0.75rem; color: #94a3b8; margin-bottom: 8px; }
   </style>
 </head>
 <body>
 
   <div class="header-box">
-    <h2>🎓 生徒データベース検索くん <span class="version-tag">v2.0.0</span></h2>
+    <h2>🎓 生徒データベース検索くん <span class="version-tag">v2.1.0</span></h2>
   </div>
-  <div class="sub-desc">全フィールド対応 自由複合条件検索 ＆ CSVエクスポート</div>
+  <div class="sub-desc">セキュリティ強化版 サーバー側検索 ＆ 監査ログ記録</div>
 
-  <!-- ログイン中の教員バー -->
   <div class="user-bar" id="userBar">
     <span>👤 ログイン中: <span class="user-name" id="userNameLabel"></span> 先生</span>
     <button class="logout-btn" id="logoutBtn">ログアウト</button>
   </div>
 
-  <!-- ログイン入力フォーム -->
   <div class="login-container" id="loginContainer">
     <div class="login-title">🔒 教員認証</div>
     <div class="login-field">
@@ -103,96 +85,71 @@
     <div class="login-error" id="loginError"></div>
   </div>
 
-  <!-- メイン検索アプリ領域 -->
   <div id="mainAppArea">
-    <div class="status-bar" id="statusBar">✅ データベース準備完了</div>
+    <div class="status-bar" id="statusBar">✅ データベース接続完了（項目マスター取得済）</div>
 
-    <!-- 1. 出力項目選択 -->
     <div class="card">
       <div class="card-title">
         <span>1. 出力・表示する項目を選択（記憶されます）</span>
         <span style="font-size:0.75rem; font-weight:normal;"><a href="#" id="selectAllBtn">全選択</a> / <a href="#" id="deselectAllBtn">解除</a></span>
       </div>
-      <div class="checkbox-group" id="fieldCheckboxes">
-        <!-- 動的生成 -->
-      </div>
+      <div class="checkbox-group" id="fieldCheckboxes"></div>
     </div>
 
-    <!-- 2. 自由複合条件検索 -->
     <div class="card">
       <div class="card-title">2. 検索条件の設定（AND検索・部分一致）</div>
-      <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:8px;">条件を複数指定して絞り込めます（空欄の条件行は無視されます）</div>
-      
-      <div class="criteria-list" id="criteriaList">
-        <!-- 初期条件行を動的生成 -->
-      </div>
-
+      <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:8px;">サーバー側で安全に検索します（空欄の条件行は無視されます）</div>
+      <div class="criteria-list" id="criteriaList"></div>
       <div class="search-action-bar">
         <button type="button" class="btn-add-crit" id="addCriteriaBtn">➕ 条件を追加</button>
         <button type="button" class="btn-search-exec" id="executeSearchBtn">🔍 検索実行</button>
       </div>
     </div>
 
-    <!-- 検索結果エリア -->
     <div class="result-box" id="resultBox">
       <div class="result-header-row">
         <div class="result-count-badge" id="resultBadge">検索結果: <span>0</span> 名</div>
         <button type="button" class="btn-csv" id="downloadCsvBtn">📥 CSVダウンロード</button>
       </div>
-      <div class="table-container" id="tableContainer">
-        <!-- テーブル生成 -->
-      </div>
+      <div class="table-container" id="tableContainer"></div>
     </div>
   </div>
 
   <script>
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwzbUMOPgQaGan2cK_illXQ8XQZy3Xf4guG_k1O3F6mLCdNWPIDe9-_bvH4qApQ5JbcMA/exec";
     const STORAGE_KEY_FIELDS = 'student_db_v2_selected_fields';
-    const CACHE_KEY_STUDENTS = 'student_db_v2_cache';
-    const SESSION_KEY_TEACHER = 'student_db_v2_teacher';
+    const SESSION_KEY_AUTH = 'student_db_v2_auth';
 
     let allHeaders = [];
-    let allRows = [];
     let currentMatchedRows = [];
+    let currentSearchConditionText = '';
 
     window.addEventListener('DOMContentLoaded', () => {
-      // ログインボタン
       document.getElementById('loginBtn').addEventListener('click', executeLogin);
       document.getElementById('loginPass').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') executeLogin();
       });
-
-      // ログアウト
       document.getElementById('logoutBtn').addEventListener('click', logout);
-
-      // 項目全選択・解除
       document.getElementById('selectAllBtn').addEventListener('click', (e) => { e.preventDefault(); selectAll(true); });
       document.getElementById('deselectAllBtn').addEventListener('click', (e) => { e.preventDefault(); selectAll(false); });
-
-      // 条件追加・検索実行
       document.getElementById('addCriteriaBtn').addEventListener('click', () => addCriteriaRow());
       document.getElementById('executeSearchBtn').addEventListener('click', executeSearch);
       document.getElementById('downloadCsvBtn').addEventListener('click', downloadCurrentCSV);
 
-      // セッション復元
       try {
-        const savedTeacher = sessionStorage.getItem(SESSION_KEY_TEACHER);
-        const savedData = localStorage.getItem(CACHE_KEY_STUDENTS);
-        if (savedTeacher && savedData) {
-          const teacherObj = JSON.parse(savedTeacher);
-          const parsed = JSON.parse(savedData);
-          allHeaders = parsed.headers || [];
-          allRows = parsed.rows || [];
-          showApp(teacherObj);
+        const savedAuth = sessionStorage.getItem(SESSION_KEY_AUTH);
+        if (savedAuth) {
+          const authObj = JSON.parse(savedAuth);
+          allHeaders = authObj.headers || [];
+          showApp(authObj.teacher);
           buildFieldCheckboxes();
           initCriteriaRows();
         }
       } catch (e) {
-        sessionStorage.removeItem(SESSION_KEY_TEACHER);
+        sessionStorage.removeItem(SESSION_KEY_AUTH);
       }
     });
 
-    // ログイン処理
     function executeLogin() {
       const idVal = document.getElementById('loginId').value.trim();
       const passVal = document.getElementById('loginPass').value.trim();
@@ -215,12 +172,15 @@
 
         if (res && res.success) {
           allHeaders = res.headers || [];
-          allRows = res.rows || [];
-
-          sessionStorage.setItem(SESSION_KEY_TEACHER, JSON.stringify(res.teacher || { name: '教員' }));
-          try {
-            localStorage.setItem(CACHE_KEY_STUDENTS, JSON.stringify({ headers: allHeaders, rows: allRows }));
-          } catch(e) {}
+          
+          // 認証情報とヘッダーのみセッションに保存（生徒データは保存しない）
+          const authPayload = {
+            id: idVal,
+            pass: passVal,
+            teacher: res.teacher || { name: '教員' },
+            headers: allHeaders
+          };
+          sessionStorage.setItem(SESSION_KEY_AUTH, JSON.stringify(authPayload));
 
           showApp(res.teacher || { name: '教員' });
           buildFieldCheckboxes();
@@ -247,14 +207,12 @@
       document.getElementById('userBar').style.display = 'flex';
       document.getElementById('userNameLabel').innerText = (teacher && teacher.name) ? teacher.name : '教員';
       document.getElementById('mainAppArea').style.display = 'block';
-      document.getElementById('statusBar').innerText = `✅ データベース準備完了（全 ${allRows.length} 名のデータ）`;
+      document.getElementById('statusBar').innerText = `✅ データベース接続完了（項目マスター取得済）`;
     }
 
     function logout() {
-      sessionStorage.removeItem(SESSION_KEY_TEACHER);
-      localStorage.removeItem(CACHE_KEY_STUDENTS);
+      sessionStorage.removeItem(SESSION_KEY_AUTH);
       allHeaders = [];
-      allRows = [];
       currentMatchedRows = [];
       document.getElementById('loginId').value = '';
       document.getElementById('loginPass').value = '';
@@ -264,12 +222,9 @@
       document.getElementById('loginContainer').style.display = 'block';
     }
 
-    // 生年月日の日付整形（YYYY/MM/DD）
     function formatValue(fieldName, val) {
       if (val === undefined || val === null || val === '') return '';
-
       if (fieldName.includes('生年月日') || fieldName.includes('日付') || fieldName.includes('日')) {
-        // シリアル値
         if (!isNaN(val) && Number(val) > 30000 && Number(val) < 60000) {
           const excelEpoch = new Date(1899, 11, 30);
           const jsDate = new Date(excelEpoch.getTime() + Number(val) * 24 * 60 * 60 * 1000);
@@ -278,7 +233,6 @@
           const d = String(jsDate.getDate()).padStart(2, '0');
           return `${y}/${m}/${d}`;
         }
-        // 日時文字列（ISO文字列など）
         const parsedDate = new Date(val);
         if (!isNaN(parsedDate.getTime()) && String(val).length > 7 && !/^\d+$/.test(String(val))) {
           const y = parsedDate.getFullYear();
@@ -290,7 +244,6 @@
       return String(val);
     }
 
-    // 出力項目のチェックボックス生成
     function buildFieldCheckboxes() {
       const container = document.getElementById('fieldCheckboxes');
       container.innerHTML = '';
@@ -307,14 +260,12 @@
       allHeaders.forEach(header => {
         const wrapper = document.createElement('label');
         wrapper.className = 'checkbox-label';
-
         const chk = document.createElement('input');
         chk.type = 'checkbox';
         chk.value = header;
         chk.id = 'chk_' + header;
         chk.checked = savedFields.includes(header);
         chk.onchange = saveSelectedFields;
-
         wrapper.appendChild(chk);
         wrapper.appendChild(document.createTextNode(header));
         container.appendChild(wrapper);
@@ -341,11 +292,9 @@
       return selected;
     }
 
-    // 検索条件行の管理
     function initCriteriaRows() {
       const container = document.getElementById('criteriaList');
       container.innerHTML = '';
-      // 初期状態で「氏名」と「クラス」の2行をセット
       addCriteriaRow('氏名', '');
       const classField = allHeaders.find(h => h.includes('クラス')) || (allHeaders[1] || '');
       addCriteriaRow(classField, '');
@@ -379,7 +328,6 @@
       removeBtn.innerText = '✕';
       removeBtn.title = 'この条件を削除';
       removeBtn.addEventListener('click', () => {
-        // 条件が1行だけの場合は削除せず値を空にする
         if (container.querySelectorAll('.criteria-row').length > 1) {
           container.removeChild(rowDiv);
         } else {
@@ -393,19 +341,22 @@
       container.appendChild(rowDiv);
     }
 
-    // 自由複合条件検索の実行
+    // サーバー側検索の実行
     function executeSearch() {
-      if (allRows.length === 0) {
-        alert('生徒データが読み込まれていません。');
+      const authStr = sessionStorage.getItem(SESSION_KEY_AUTH);
+      if (!authStr) {
+        alert('セッションが切れました。再度ログインしてください。');
+        logout();
         return;
       }
+      const auth = JSON.parse(authStr);
 
       const rows = document.querySelectorAll('.criteria-row');
       const activeCriteria = [];
 
       rows.forEach(r => {
         const field = r.querySelector('select').value;
-        const val = r.querySelector('input').value.trim().toLowerCase();
+        const val = r.querySelector('input').value.trim();
         if (val !== '') {
           activeCriteria.push({ field: field, value: val });
         }
@@ -416,43 +367,60 @@
         return;
       }
 
-      // AND検索（全条件を満たす行のみ抽出）
-      currentMatchedRows = allRows.filter(row => {
-        return activeCriteria.every(crit => {
-          const rawCell = row[crit.field];
-          const cellStr = formatValue(crit.field, rawCell).toString().trim().toLowerCase();
-          return cellStr.includes(crit.value);
-        });
-      });
+      const selectedFields = getSelectedFields();
+      if (selectedFields.length === 0) {
+        alert('出力する項目が選択されていません。「1. 出力項目」で選択してください。');
+        return;
+      }
 
-      renderSearchResults(currentMatchedRows);
+      const searchBtn = document.getElementById('executeSearchBtn');
+      searchBtn.disabled = true;
+      searchBtn.innerText = '🔄 検索中...';
+
+      currentSearchConditionText = activeCriteria.map(c => `${c.field}: ${c.value}`).join(' / ');
+
+      window.handleAppSearch = function(res) {
+        searchBtn.disabled = false;
+        searchBtn.innerText = '🔍 検索実行';
+
+        if (res && res.success) {
+          currentMatchedRows = res.rows || [];
+          renderSearchResults(currentMatchedRows, selectedFields);
+        } else {
+          alert(res && res.message ? res.message : '検索中にエラーが発生しました。');
+        }
+      };
+
+      const script = document.createElement('script');
+      const criteriaParam = encodeURIComponent(JSON.stringify(activeCriteria));
+      const fieldsParam = encodeURIComponent(JSON.stringify(selectedFields));
+      script.src = `${GAS_API_URL}?action=search&id=${encodeURIComponent(auth.id)}&pass=${encodeURIComponent(auth.pass)}&criteria=${criteriaParam}&fields=${fieldsParam}&callback=handleAppSearch&t=${Date.now()}`;
+      script.onerror = function() {
+        searchBtn.disabled = false;
+        searchBtn.innerText = '🔍 検索実行';
+        alert('通信エラーが発生しました。');
+      };
+      document.body.appendChild(script);
     }
 
-    // 検索結果テーブルの描画
-    function renderSearchResults(matched) {
+    function renderSearchResults(matched, selectedFields) {
       const resultBox = document.getElementById('resultBox');
       const badge = document.getElementById('resultBadge');
       const tableContainer = document.getElementById('tableContainer');
 
       resultBox.style.display = 'block';
-      badge.innerHTML = `該当者: <span>${matched.length}</span> 名`;
+      badge.innerHTML = `検索結果: <span>${matched.length}</span> 名`;
       tableContainer.innerHTML = '';
 
       if (matched.length === 0) {
         tableContainer.innerHTML = `<div style="color:#f87171; text-align:center; padding:15px; font-weight:bold;">指定した条件に一致する生徒は見つかりませんでした。</div>`;
-        return;
-      }
-
-      const selectedFields = getSelectedFields();
-      if (selectedFields.length === 0) {
-        tableContainer.innerHTML = `<div style="color:#94a3b8; text-align:center; padding:15px;">出力する項目が選択されていません。「1. 出力項目」で選択してください。</div>`;
+        resultBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
       }
 
       const table = document.createElement('table');
       table.className = 'result-table';
 
-      // ヘッダー行
       const thead = document.createElement('thead');
       const headTr = document.createElement('tr');
       selectedFields.forEach(f => {
@@ -463,7 +431,6 @@
       thead.appendChild(headTr);
       table.appendChild(thead);
 
-      // データ行
       const tbody = document.createElement('tbody');
       matched.forEach(row => {
         const tr = document.createElement('tr');
@@ -477,11 +444,10 @@
       table.appendChild(tbody);
       tableContainer.appendChild(table);
 
-      // 結果位置へスムーズにスクロール
       resultBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    // 現在の検索結果をCSVダウンロード
+    // CSVダウンロード ＆ ログ記録
     function downloadCurrentCSV() {
       if (!currentMatchedRows || currentMatchedRows.length === 0) {
         alert('ダウンロード対象の生徒データがありません。');
@@ -492,6 +458,16 @@
       if (selectedFields.length === 0) {
         alert('出力項目が選択されていません。');
         return;
+      }
+
+      const authStr = sessionStorage.getItem(SESSION_KEY_AUTH);
+      if (authStr) {
+        const auth = JSON.parse(authStr);
+        // バックグラウンドでCSVログを送信
+        const script = document.createElement('script');
+        script.src = `${GAS_API_URL}?action=log_csv&id=${encodeURIComponent(auth.id)}&pass=${encodeURIComponent(auth.pass)}&count=${currentMatchedRows.length}&condition=${encodeURIComponent(currentSearchConditionText)}&callback=handleLogCsvResult&t=${Date.now()}`;
+        window.handleLogCsvResult = function() {}; // コールバック空処理
+        document.body.appendChild(script);
       }
 
       const csvRows = [];
