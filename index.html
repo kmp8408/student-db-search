@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>生徒データベース検索くん v2.1.0</title>
+  <title>生徒データベース検索くん v2.2.0</title>
   <style>
     body { font-family: sans-serif; margin: 8px; background: #1b2e23; color: #e2e8f0; max-width: 750px; margin: 0 auto; padding: 12px; box-sizing: border-box; }
     * { box-sizing: border-box; }
@@ -29,9 +29,11 @@
     .card-title { font-weight: bold; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 8px; border-bottom: 2px solid #0d9488; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
     .card-title a { color: #5eead4; text-decoration: none; }
     .card-title a:hover { text-decoration: underline; }
-    .checkbox-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 6px; max-height: 140px; overflow-y: auto; padding: 6px; border: 1px solid #334e3f; background: #18281e; border-radius: 4px; }
+    .checkbox-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; max-height: 150px; overflow-y: auto; padding: 6px; border: 1px solid #334e3f; background: #18281e; border-radius: 4px; }
     .checkbox-label { font-size: 0.8rem; display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; color: #cbd5e1; }
+    .checkbox-label.secret-field { color: #fca5a5; font-weight: bold; }
     .checkbox-label input[type="checkbox"] { accent-color: #0d9488; }
+    .secret-tag { font-size: 0.65rem; background: #7f1d1d; color: #fecaca; padding: 1px 4px; border-radius: 4px; border: 1px solid #b91c1c; }
     .criteria-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
     .criteria-row { display: flex; gap: 6px; align-items: center; }
     .criteria-row select { flex: 1.2; min-width: 110px; padding: 8px; font-size: 0.85rem; border: 1px solid #475569; border-radius: 4px; background: #18281e; color: #f8fafc; }
@@ -57,14 +59,17 @@
     table.result-table th { background: #1f3529; font-weight: bold; color: #5eead4; position: sticky; top: 0; z-index: 2; }
     table.result-table tr:hover { background: #23382c; }
     .status-bar { text-align: center; font-size: 0.75rem; color: #94a3b8; margin-bottom: 8px; }
+    .mask-val { letter-spacing: 2px; color: #94a3b8; user-select: none; }
+    .btn-toggle-mask { background: transparent; border: 1px solid #475569; border-radius: 3px; color: #cbd5e1; cursor: pointer; font-size: 0.75rem; margin-left: 6px; padding: 1px 4px; vertical-align: middle; }
+    .btn-toggle-mask:hover { background: #334155; color: #fff; }
   </style>
 </head>
 <body>
 
   <div class="header-box">
-    <h2>🎓 生徒データベース検索くん <span class="version-tag">v2.1.0</span></h2>
+    <h2>🎓 生徒データベース検索くん <span class="version-tag">v2.2.0</span></h2>
   </div>
-  <div class="sub-desc">セキュリティ強化版 サーバー側検索 ＆ 監査ログ記録</div>
+  <div class="sub-desc">セキュリティ強化版 マスキング表示 ＆ 監査ログ記録</div>
 
   <div class="user-bar" id="userBar">
     <span>👤 ログイン中: <span class="user-name" id="userNameLabel"></span> 先生</span>
@@ -172,8 +177,6 @@
 
         if (res && res.success) {
           allHeaders = res.headers || [];
-          
-          // 認証情報とヘッダーのみセッションに保存（生徒データは保存しない）
           const authPayload = {
             id: idVal,
             pass: passVal,
@@ -222,6 +225,12 @@
       document.getElementById('loginContainer').style.display = 'block';
     }
 
+    // 機微情報項目判定
+    function isSecretField(fieldName) {
+      const lower = fieldName.toLowerCase();
+      return lower.includes('パス') || lower.includes('pass') || lower.includes('key') || lower.includes('キー') || lower.includes('pin');
+    }
+
     function formatValue(fieldName, val) {
       if (val === undefined || val === null || val === '') return '';
       if (fieldName.includes('生年月日') || fieldName.includes('日付') || fieldName.includes('日')) {
@@ -253,13 +262,15 @@
       if (!savedFields) {
         const currentYearStr = new Date().getFullYear().toString();
         savedFields = allHeaders.filter(h => 
-          ['氏名', 'st番号', '性別', 'メールアドレス', 'BLENDパス', '在籍状況'].includes(h) || h.includes(currentYearStr)
+          ['氏名', 'st番号', '性別', 'メールアドレス', '在籍状況'].includes(h) || h.includes(currentYearStr)
         );
       }
 
       allHeaders.forEach(header => {
         const wrapper = document.createElement('label');
-        wrapper.className = 'checkbox-label';
+        const isSecret = isSecretField(header);
+        wrapper.className = isSecret ? 'checkbox-label secret-field' : 'checkbox-label';
+        
         const chk = document.createElement('input');
         chk.type = 'checkbox';
         chk.value = header;
@@ -267,6 +278,14 @@
         chk.checked = savedFields.includes(header);
         chk.onchange = saveSelectedFields;
         wrapper.appendChild(chk);
+
+        if (isSecret) {
+          const tag = document.createElement('span');
+          tag.className = 'secret-tag';
+          tag.innerText = '🔒機微';
+          wrapper.appendChild(tag);
+        }
+
         wrapper.appendChild(document.createTextNode(header));
         container.appendChild(wrapper);
       });
@@ -309,7 +328,7 @@
       allHeaders.forEach(h => {
         const opt = document.createElement('option');
         opt.value = h;
-        opt.innerText = h;
+        opt.innerText = isSecretField(h) ? `🔒 ${h}` : h;
         if (h === defaultField) opt.selected = true;
         select.appendChild(opt);
       });
@@ -341,7 +360,6 @@
       container.appendChild(rowDiv);
     }
 
-    // サーバー側検索の実行
     function executeSearch() {
       const authStr = sessionStorage.getItem(SESSION_KEY_AUTH);
       if (!authStr) {
@@ -425,7 +443,7 @@
       const headTr = document.createElement('tr');
       selectedFields.forEach(f => {
         const th = document.createElement('th');
-        th.innerText = f;
+        th.innerText = isSecretField(f) ? `🔒 ${f}` : f;
         headTr.appendChild(th);
       });
       thead.appendChild(headTr);
@@ -436,7 +454,38 @@
         const tr = document.createElement('tr');
         selectedFields.forEach(f => {
           const td = document.createElement('td');
-          td.innerText = formatValue(f, row[f]);
+          const val = formatValue(f, row[f]);
+          
+          if (isSecretField(f) && val !== '') {
+            const spanText = document.createElement('span');
+            spanText.className = 'mask-val';
+            spanText.innerText = '••••••••';
+            spanText.dataset.raw = val;
+            spanText.dataset.masked = 'true';
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn-toggle-mask';
+            btn.innerText = '👁️';
+            btn.title = '表示/非表示を切り替え';
+            btn.onclick = function() {
+              if (spanText.dataset.masked === 'true') {
+                spanText.innerText = spanText.dataset.raw;
+                spanText.className = '';
+                spanText.dataset.masked = 'false';
+                btn.innerText = '🙈';
+              } else {
+                spanText.innerText = '••••••••';
+                spanText.className = 'mask-val';
+                spanText.dataset.masked = 'true';
+                btn.innerText = '👁️';
+              }
+            };
+            td.appendChild(spanText);
+            td.appendChild(btn);
+          } else {
+            td.innerText = val;
+          }
           tr.appendChild(td);
         });
         tbody.appendChild(tr);
@@ -447,7 +496,6 @@
       resultBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    // CSVダウンロード ＆ ログ記録
     function downloadCurrentCSV() {
       if (!currentMatchedRows || currentMatchedRows.length === 0) {
         alert('ダウンロード対象の生徒データがありません。');
@@ -460,13 +508,18 @@
         return;
       }
 
+      const hasSecret = selectedFields.some(f => isSecretField(f));
+      if (hasSecret) {
+        const ok = confirm('⚠️ 注意：出力項目にパスワード等の機微情報が含まれています。\nファイルの取り扱い・保管場所には十分ご注意ください。\n\nCSV出力を続行しますか？');
+        if (!ok) return;
+      }
+
       const authStr = sessionStorage.getItem(SESSION_KEY_AUTH);
       if (authStr) {
         const auth = JSON.parse(authStr);
-        // バックグラウンドでCSVログを送信
         const script = document.createElement('script');
         script.src = `${GAS_API_URL}?action=log_csv&id=${encodeURIComponent(auth.id)}&pass=${encodeURIComponent(auth.pass)}&count=${currentMatchedRows.length}&condition=${encodeURIComponent(currentSearchConditionText)}&callback=handleLogCsvResult&t=${Date.now()}`;
-        window.handleLogCsvResult = function() {}; // コールバック空処理
+        window.handleLogCsvResult = function() {};
         document.body.appendChild(script);
       }
 
