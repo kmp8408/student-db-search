@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>生徒データベース検索くん v2.2.0</title>
+  <title>生徒データベース検索くん v2.2.1</title>
   <style>
     body { font-family: sans-serif; margin: 8px; background: #1b2e23; color: #e2e8f0; max-width: 750px; margin: 0 auto; padding: 12px; box-sizing: border-box; }
     * { box-sizing: border-box; }
@@ -29,11 +29,17 @@
     .card-title { font-weight: bold; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 8px; border-bottom: 2px solid #0d9488; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
     .card-title a { color: #5eead4; text-decoration: none; }
     .card-title a:hover { text-decoration: underline; }
-    .checkbox-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; max-height: 150px; overflow-y: auto; padding: 6px; border: 1px solid #334e3f; background: #18281e; border-radius: 4px; }
+    .checkbox-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; max-height: 140px; overflow-y: auto; padding: 6px; border: 1px solid #334e3f; background: #18281e; border-radius: 4px; }
     .checkbox-label { font-size: 0.8rem; display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; color: #cbd5e1; }
-    .checkbox-label.secret-field { color: #fca5a5; font-weight: bold; }
+    .checkbox-label.secret-field { color: #f87171; font-weight: bold; }
     .checkbox-label input[type="checkbox"] { accent-color: #0d9488; }
-    .secret-tag { font-size: 0.65rem; background: #7f1d1d; color: #fecaca; padding: 1px 4px; border-radius: 4px; border: 1px solid #b91c1c; }
+    
+    /* 秘密情報トグルエリア */
+    .secret-toggle-bar { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #334e3f; }
+    .btn-secret-toggle { background: #2d1e24; color: #fca5a5; border: 1px solid #7f1d1d; padding: 5px 10px; font-size: 0.75rem; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-weight: bold; }
+    .btn-secret-toggle:hover { background: #3b242d; }
+    .secret-checkbox-container { display: none; margin-top: 6px; padding: 6px; background: #22161b; border: 1px solid #7f1d1d; border-radius: 4px; max-height: 100px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
+
     .criteria-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
     .criteria-row { display: flex; gap: 6px; align-items: center; }
     .criteria-row select { flex: 1.2; min-width: 110px; padding: 8px; font-size: 0.85rem; border: 1px solid #475569; border-radius: 4px; background: #18281e; color: #f8fafc; }
@@ -67,9 +73,9 @@
 <body>
 
   <div class="header-box">
-    <h2>🎓 生徒データベース検索くん <span class="version-tag">v2.2.0</span></h2>
+    <h2>🎓 生徒データベース検索くん <span class="version-tag">v2.2.1</span></h2>
   </div>
-  <div class="sub-desc">セキュリティ強化版 マスキング表示 ＆ 監査ログ記録</div>
+  <div class="sub-desc">セキュリティ強化版 サーバー側検索 ＆ 監査ログ記録</div>
 
   <div class="user-bar" id="userBar">
     <span>👤 ログイン中: <span class="user-name" id="userNameLabel"></span> 先生</span>
@@ -98,7 +104,15 @@
         <span>1. 出力・表示する項目を選択（記憶されます）</span>
         <span style="font-size:0.75rem; font-weight:normal;"><a href="#" id="selectAllBtn">全選択</a> / <a href="#" id="deselectAllBtn">解除</a></span>
       </div>
-      <div class="checkbox-group" id="fieldCheckboxes"></div>
+      
+      <!-- 基本項目のチェックボックス一覧 -->
+      <div class="checkbox-group" id="baseFieldCheckboxes"></div>
+
+      <!-- 秘密情報の開閉アコーディオン -->
+      <div class="secret-toggle-bar" id="secretToggleBar" style="display:none;">
+        <button type="button" class="btn-secret-toggle" id="secretToggleBtn">🔒 秘密情報の項目を表示する（クリックで展開）</button>
+        <div class="secret-checkbox-container" id="secretFieldCheckboxes" style="display:none;"></div>
+      </div>
     </div>
 
     <div class="card">
@@ -126,6 +140,8 @@
     const SESSION_KEY_AUTH = 'student_db_v2_auth';
 
     let allHeaders = [];
+    let baseHeaders = [];
+    let secretHeaders = [];
     let currentMatchedRows = [];
     let currentSearchConditionText = '';
 
@@ -141,11 +157,26 @@
       document.getElementById('executeSearchBtn').addEventListener('click', executeSearch);
       document.getElementById('downloadCsvBtn').addEventListener('click', downloadCurrentCSV);
 
+      // 秘密情報開閉ボタン
+      document.getElementById('secretToggleBtn').addEventListener('click', () => {
+        const secretContainer = document.getElementById('secretFieldCheckboxes');
+        const btn = document.getElementById('secretToggleBtn');
+        if (secretContainer.style.display === 'none' || secretContainer.style.display === '') {
+          secretContainer.style.display = 'grid';
+          btn.innerText = '🔓 秘密情報の項目を閉じる';
+        } else {
+          secretContainer.style.display = 'none';
+          btn.innerText = '🔒 秘密情報の項目を表示する（クリックで展開）';
+        }
+      });
+
       try {
         const savedAuth = sessionStorage.getItem(SESSION_KEY_AUTH);
         if (savedAuth) {
           const authObj = JSON.parse(savedAuth);
           allHeaders = authObj.headers || [];
+          baseHeaders = authObj.baseHeaders || [];
+          secretHeaders = authObj.secretHeaders || [];
           showApp(authObj.teacher);
           buildFieldCheckboxes();
           initCriteriaRows();
@@ -177,11 +208,16 @@
 
         if (res && res.success) {
           allHeaders = res.headers || [];
+          baseHeaders = res.baseHeaders || [];
+          secretHeaders = res.secretHeaders || [];
+
           const authPayload = {
             id: idVal,
             pass: passVal,
             teacher: res.teacher || { name: '教員' },
-            headers: allHeaders
+            headers: allHeaders,
+            baseHeaders: baseHeaders,
+            secretHeaders: secretHeaders
           };
           sessionStorage.setItem(SESSION_KEY_AUTH, JSON.stringify(authPayload));
 
@@ -216,6 +252,8 @@
     function logout() {
       sessionStorage.removeItem(SESSION_KEY_AUTH);
       allHeaders = [];
+      baseHeaders = [];
+      secretHeaders = [];
       currentMatchedRows = [];
       document.getElementById('loginId').value = '';
       document.getElementById('loginPass').value = '';
@@ -225,10 +263,11 @@
       document.getElementById('loginContainer').style.display = 'block';
     }
 
-    // 機微情報項目判定
+    // 秘密項目判定（秘密情報シート由来、またはキーワード含有）
     function isSecretField(fieldName) {
+      if (secretHeaders.includes(fieldName)) return true;
       const lower = fieldName.toLowerCase();
-      return lower.includes('パス') || lower.includes('pass') || lower.includes('key') || lower.includes('キー') || lower.includes('pin');
+      return lower.includes('パス') || lower.includes('pass') || lower.includes('key') || lower.includes('キー') || lower.includes('pin') || lower.includes('bitlocker');
     }
 
     function formatValue(fieldName, val) {
@@ -254,8 +293,12 @@
     }
 
     function buildFieldCheckboxes() {
-      const container = document.getElementById('fieldCheckboxes');
-      container.innerHTML = '';
+      const baseContainer = document.getElementById('baseFieldCheckboxes');
+      const secretContainer = document.getElementById('secretFieldCheckboxes');
+      const secretToggleBar = document.getElementById('secretToggleBar');
+
+      baseContainer.innerHTML = '';
+      secretContainer.innerHTML = '';
       if (allHeaders.length === 0) return;
 
       let savedFields = JSON.parse(localStorage.getItem(STORAGE_KEY_FIELDS));
@@ -266,9 +309,11 @@
         );
       }
 
+      let secretCount = 0;
+
       allHeaders.forEach(header => {
-        const wrapper = document.createElement('label');
         const isSecret = isSecretField(header);
+        const wrapper = document.createElement('label');
         wrapper.className = isSecret ? 'checkbox-label secret-field' : 'checkbox-label';
         
         const chk = document.createElement('input');
@@ -278,34 +323,35 @@
         chk.checked = savedFields.includes(header);
         chk.onchange = saveSelectedFields;
         wrapper.appendChild(chk);
+        wrapper.appendChild(document.createTextNode(header));
 
         if (isSecret) {
-          const tag = document.createElement('span');
-          tag.className = 'secret-tag';
-          tag.innerText = '🔒機微';
-          wrapper.appendChild(tag);
+          secretCount++;
+          secretContainer.appendChild(wrapper);
+        } else {
+          baseContainer.appendChild(wrapper);
         }
-
-        wrapper.appendChild(document.createTextNode(header));
-        container.appendChild(wrapper);
       });
+
+      // 秘密項目が存在する場合のみトグルバーを表示
+      secretToggleBar.style.display = secretCount > 0 ? 'block' : 'none';
     }
 
     function saveSelectedFields() {
-      const checkboxes = document.querySelectorAll('#fieldCheckboxes input[type="checkbox"]');
+      const checkboxes = document.querySelectorAll('#mainAppArea input[type="checkbox"]');
       const selected = [];
       checkboxes.forEach(chk => { if (chk.checked) selected.push(chk.value); });
       localStorage.setItem(STORAGE_KEY_FIELDS, JSON.stringify(selected));
     }
 
     function selectAll(checkState) {
-      const checkboxes = document.querySelectorAll('#fieldCheckboxes input[type="checkbox"]');
+      const checkboxes = document.querySelectorAll('#mainAppArea input[type="checkbox"]');
       checkboxes.forEach(chk => chk.checked = checkState);
       saveSelectedFields();
     }
 
     function getSelectedFields() {
-      const checkboxes = document.querySelectorAll('#fieldCheckboxes input[type="checkbox"]');
+      const checkboxes = document.querySelectorAll('#mainAppArea input[type="checkbox"]');
       const selected = [];
       checkboxes.forEach(chk => { if (chk.checked) selected.push(chk.value); });
       return selected;
@@ -444,6 +490,7 @@
       selectedFields.forEach(f => {
         const th = document.createElement('th');
         th.innerText = isSecretField(f) ? `🔒 ${f}` : f;
+        if (isSecretField(f)) th.style.color = '#f87171';
         headTr.appendChild(th);
       });
       thead.appendChild(headTr);
